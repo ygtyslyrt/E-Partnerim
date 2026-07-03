@@ -1,0 +1,757 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum PageType {
+  HOMEPAGE
+  STANDARD
+  LANDING
+  BLOG_INDEX
+}
+
+enum FeatureType {
+  ADVANTAGE
+  DISADVANTAGE
+}
+
+enum ComponentType {
+  CTA_BUTTON
+  CTA_BANNER
+  CARD
+  BADGE
+  FORM_WIDGET
+  ANNOUNCEMENT_BAR
+}
+
+enum NavLocation {
+  HEADER
+  FOOTER_COL1
+  FOOTER_COL2
+  FOOTER_COL3
+}
+
+enum SettingsGroup {
+  GENERAL
+  BRANDING
+  CONTACT
+  ANALYTICS
+  SOCIAL
+  LEGAL
+}
+
+enum FormStatus {
+  UNREAD
+  READ
+  REPLIED
+  SPAM
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+  ON_HOLD
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadSource {
+  PARTNERIX
+  CONTACT_FORM
+  CONSULTING
+  MANUAL
+  REFERRAL
+  SOCIAL
+  ORGANIC
+}
+
+enum ActivityType {
+  CREATED
+  STATUS_CHANGED
+  NOTE_ADDED
+  EMAIL_SENT
+  CALL_MADE
+  MEETING_SCHEDULED
+  FORM_SUBMITTED
+  PARTNERIX_COMPLETED
+  ASSIGNED
+}
+
+// ═══════════════════════════════════════════════════════
+// KULLANICILAR
+// ═══════════════════════════════════════════════════════
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(EDITOR)
+  avatar    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  blogPosts     BlogPost[]
+  revisions     Revision[]
+  assignedLeads Lead[]       @relation("AssignedLeads")
+  leadNotes     LeadNote[]
+  mediaUploads  Media[]
+}
+
+// ═══════════════════════════════════════════════════════
+// SAYFALAR & BÖLÜMLER (İlişkisel)
+// ═══════════════════════════════════════════════════════
+
+model Page {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  type        PageType  @default(STANDARD)
+  status      Status    @default(DRAFT)
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  seoTitle    String?
+  seoDesc     String?   @db.Text
+  seoKeywords String?
+  ogImage     String?
+  robots      String    @default("index,follow")
+  canonical   String?
+  schema      Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sections PageSectionMeta[]
+}
+
+model PageSectionMeta {
+  id          String   @id @default(cuid())
+  pageId      String
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sectionType String
+  order       Int      @default(0)
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  heroContent        HeroSectionContent?
+  servicesContent    ServicesSectionContent?
+  howItWorksContent  HowItWorksSectionContent?
+  whyUsContent       WhyUsSectionContent?
+  socialProofContent SocialProofSectionContent?
+  ctaContent         CtaSectionContent?
+  blogContent        BlogSectionConfig?
+
+  @@unique([pageId, sectionType])
+}
+
+// Hero bölümü
+model HeroSectionContent {
+  id         String          @id @default(cuid())
+  sectionId  String          @unique
+  section    PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  badge      String?
+  title1     String
+  title2     String
+  gradient   String?
+  subtitle   String?         @db.Text
+  bgType     String          @default("lavender")
+  bgColor    String?
+  bgImage    String?
+  dotPattern Boolean         @default(true)
+}
+
+// Hizmetler bölümü
+model ServicesSectionContent {
+  id        String          @id @default(cuid())
+  sectionId String          @unique
+  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String?
+  subtitle  String?
+  items     ServiceItem[]
+}
+
+model ServiceItem {
+  id          String                 @id @default(cuid())
+  servicesId  String
+  services    ServicesSectionContent @relation(fields: [servicesId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  icon        String
+  color       String
+  link        String?
+  order       Int                    @default(0)
+}
+
+// Nasıl çalışır bölümü
+model HowItWorksSectionContent {
+  id        String          @id @default(cuid())
+  sectionId String          @unique
+  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String?
+  subtitle  String?
+  steps     HowItWorksStep[]
+}
+
+model HowItWorksStep {
+  id          String                   @id @default(cuid())
+  sectionId   String
+  section     HowItWorksSectionContent @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  stepNo      Int
+  title       String
+  description String
+  icon        String?
+  order       Int                      @default(0)
+}
+
+// Neden biz bölümü
+model WhyUsSectionContent {
+  id        String          @id @default(cuid())
+  sectionId String          @unique
+  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String?
+  subtitle  String?
+  features  WhyUsFeature[]
+}
+
+model WhyUsFeature {
+  id          String              @id @default(cuid())
+  sectionId   String
+  section     WhyUsSectionContent @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  icon        String?
+  order       Int                 @default(0)
+}
+
+// Sosyal kanıt bölümü
+model SocialProofSectionContent {
+  id           String          @id @default(cuid())
+  sectionId    String          @unique
+  section      PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String?
+  logos        SocialProofLogo[]
+  stats        SocialProofStat[]
+  testimonials Testimonial[]
+}
+
+model SocialProofLogo {
+  id        String                    @id @default(cuid())
+  sectionId String
+  section   SocialProofSectionContent @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  name      String
+  logo      String
+  url       String?
+  order     Int                       @default(0)
+}
+
+model SocialProofStat {
+  id        String                    @id @default(cuid())
+  sectionId String
+  section   SocialProofSectionContent @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  value     String
+  label     String
+  order     Int                       @default(0)
+}
+
+model Testimonial {
+  id        String                    @id @default(cuid())
+  sectionId String
+  section   SocialProofSectionContent @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  name      String
+  company   String?
+  role      String?
+  avatar    String?
+  content   String                    @db.Text
+  rating    Int?
+  order     Int                       @default(0)
+}
+
+// CTA bölümü
+model CtaSectionContent {
+  id        String          @id @default(cuid())
+  sectionId String          @unique
+  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String
+  subtitle  String?
+  buttons   Json
+  style     String          @default("default")
+}
+
+// Blog widget konfigürasyonu (ana sayfa)
+model BlogSectionConfig {
+  id             String          @id @default(cuid())
+  sectionId      String          @unique
+  section        PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title          String?
+  subtitle       String?
+  showCount      Int             @default(3)
+  categoryFilter String?
+}
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL BİLEŞENLER
+// ═══════════════════════════════════════════════════════
+
+model GlobalComponent {
+  id        String        @id @default(cuid())
+  key       String        @unique
+  name      String
+  type      ComponentType
+  config    Json
+  active    Boolean       @default(true)
+  status    Status        @default(PUBLISHED)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVİGASYON & SİTE AYARLARI
+// ═══════════════════════════════════════════════════════
+
+model Navigation {
+  id        String      @id @default(cuid())
+  location  NavLocation @unique
+  items     NavItem[]
+  updatedAt DateTime    @updatedAt
+}
+
+model NavItem {
+  id       String     @id @default(cuid())
+  navId    String
+  nav      Navigation @relation(fields: [navId], references: [id], onDelete: Cascade)
+  label    String
+  href     String
+  target   String     @default("_self")
+  icon     String?
+  badge    String?
+  order    Int        @default(0)
+  children Json?
+}
+
+model SiteSettings {
+  key   String        @id
+  value String        @db.Text
+  group SettingsGroup
+  label String?
+  type  String        @default("text")
+}
+
+// ═══════════════════════════════════════════════════════
+// BLOG
+// ═══════════════════════════════════════════════════════
+
+model BlogPost {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  excerpt     String?       @db.Text
+  content     String        @db.Text
+  coverImage  String?
+  status      Status        @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  readTime    Int?
+  seoTitle    String?
+  seoDesc     String?       @db.Text
+  ogImage     String?
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id])
+  categoryId  String?
+  category    BlogCategory? @relation(fields: [categoryId], references: [id])
+  tags        BlogTagsOnPosts[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  posts       BlogPost[]
+}
+
+model BlogTag {
+  id    String            @id @default(cuid())
+  name  String
+  slug  String            @unique
+  posts BlogTagsOnPosts[]
+}
+
+model BlogTagsOnPosts {
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    BlogTag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+}
+
+// ═══════════════════════════════════════════════════════
+// PLATFORMLAR & ÇÖZÜMLER
+// ═══════════════════════════════════════════════════════
+
+model Platform {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  logo        String?
+  logoColor   String?
+  category    String?
+  shortDesc   String?
+  description String?           @db.Text
+  url         String?
+  pricing     String?
+  featured    Boolean           @default(false)
+  status      Status            @default(DRAFT)
+  order       Int               @default(0)
+  ctaLabel    String?
+  ctaUrl      String?
+  ctaLabel2   String?
+  ctaUrl2     String?
+  ogImage     String?
+  seoTitle    String?
+  seoDesc     String?           @db.Text
+  features    PlatformFeature[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model PlatformFeature {
+  id         String      @id @default(cuid())
+  platformId String
+  platform   Platform    @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  type       FeatureType
+  text       String
+  order      Int         @default(0)
+}
+
+model Solution {
+  id        String            @id @default(cuid())
+  title     String
+  slug      String            @unique
+  icon      String?
+  color     String?
+  category  String?
+  shortDesc String?
+  content   String?           @db.Text
+  featured  Boolean           @default(false)
+  status    Status            @default(DRAFT)
+  order     Int               @default(0)
+  ctaLabel  String?
+  ctaUrl    String?
+  ctaLabel2 String?
+  ctaUrl2   String?
+  ogImage   String?
+  seoTitle  String?
+  seoDesc   String?           @db.Text
+  features  SolutionFeature[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model SolutionFeature {
+  id         String      @id @default(cuid())
+  solutionId String
+  solution   Solution    @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  type       FeatureType
+  text       String
+  order      Int         @default(0)
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTNERİX (Tam İlişkisel)
+// ═══════════════════════════════════════════════════════
+
+model PartnerixFlow {
+  id         String             @id @default(cuid())
+  name       String
+  slug       String             @unique
+  active     Boolean            @default(false)
+  robotImage String?
+  welcomeMsg String?
+  bubbles    PartnerixBubble[]
+  steps      PartnerixStep[]
+  results    PartnerixResult[]
+  sessions   PartnerixSession[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model PartnerixBubble {
+  id     String        @id @default(cuid())
+  flowId String
+  flow   PartnerixFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  text   String
+  order  Int
+  delay  Float         @default(0.3)
+}
+
+model PartnerixStep {
+  id       String            @id @default(cuid())
+  flowId   String
+  flow     PartnerixFlow     @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  question String
+  order    Int
+  options  PartnerixOption[]
+}
+
+model PartnerixOption {
+  id       String        @id @default(cuid())
+  stepId   String
+  step     PartnerixStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  label    String
+  value    String
+  icon     String?
+  color    String?
+  order    Int
+  resultId String?
+}
+
+model PartnerixResult {
+  id          String        @id @default(cuid())
+  flowId      String
+  flow        PartnerixFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  title       String
+  message     String?       @db.Text
+  ctaText     String?
+  ctaHref     String?
+  ctaType     String        @default("whatsapp")
+  conversions Int           @default(0)
+}
+
+model PartnerixSession {
+  id          String        @id @default(cuid())
+  flowId      String
+  flow        PartnerixFlow @relation(fields: [flowId], references: [id])
+  completedAt DateTime?
+  answers     Json?
+  converted   Boolean       @default(false)
+  leadId      String?
+  lead        Lead?         @relation(fields: [leadId], references: [id])
+  createdAt   DateTime      @default(now())
+}
+
+// ═══════════════════════════════════════════════════════
+// FORMLAR (Ayrı tablolar)
+// ═══════════════════════════════════════════════════════
+
+model ContactForm {
+  id        String     @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  message   String     @db.Text
+  status    FormStatus @default(UNREAD)
+  leadId    String?
+  lead      Lead?      @relation(fields: [leadId], references: [id])
+  createdAt DateTime   @default(now())
+}
+
+model ConsultingForm {
+  id        String     @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  website   String?
+  budget    String?
+  timeline  String?
+  services  Json?
+  message   String?    @db.Text
+  status    FormStatus @default(UNREAD)
+  leadId    String?
+  lead      Lead?      @relation(fields: [leadId], references: [id])
+  createdAt DateTime   @default(now())
+}
+
+model PartnerixForm {
+  id          String     @id @default(cuid())
+  flowId      String
+  sessionId   String?
+  sector      String?
+  orderVolume String?
+  support     String?
+  platform    String?
+  budget      String?
+  timeline    String?
+  name        String?
+  email       String?
+  phone       String?
+  status      FormStatus @default(UNREAD)
+  leadId      String?
+  lead        Lead?      @relation(fields: [leadId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  source    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════════════════
+// CRM / LEAD YÖNETİMİ
+// ═══════════════════════════════════════════════════════
+
+model Lead {
+  id           String     @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  company      String?
+  website      String?
+  status       LeadStatus @default(NEW)
+  priority     Priority   @default(MEDIUM)
+  source       LeadSource @default(PARTNERIX)
+  sector       String?
+  budget       String?
+  timeline     String?
+  services     Json?
+  assignedToId String?
+  assignedTo   User?      @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  nextFollowUp DateTime?
+
+  partnerixForms  PartnerixForm[]
+  contactForms    ContactForm[]
+  consultingForms ConsultingForm[]
+  sessions        PartnerixSession[]
+  notes           LeadNote[]
+  activities      LeadActivity[]
+  tags            LeadTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model LeadActivity {
+  id        String       @id @default(cuid())
+  leadId    String
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  title     String
+  detail    String?
+  createdAt DateTime     @default(now())
+}
+
+model LeadTag {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  name   String
+  color  String @default("#6366F1")
+}
+
+// ═══════════════════════════════════════════════════════
+// MEDYA KÜTÜPHANESİ
+// ═══════════════════════════════════════════════════════
+
+model Media {
+  id           String       @id @default(cuid())
+  filename     String
+  originalName String
+  url          String
+  webpUrl      String?
+  thumbnailUrl String?
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  alt          String?
+  title        String?
+  description  String?
+  folderId     String?
+  folder       MediaFolder? @relation(fields: [folderId], references: [id])
+  uploadedBy   String?
+  uploader     User?        @relation(fields: [uploadedBy], references: [id])
+  createdAt    DateTime     @default(now())
+}
+
+model MediaFolder {
+  id        String        @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    MediaFolder?  @relation("FolderTree", fields: [parentId], references: [id])
+  children  MediaFolder[] @relation("FolderTree")
+  media     Media[]
+  createdAt DateTime      @default(now())
+}
+
+// ═══════════════════════════════════════════════════════
+// REVİZYON GEÇMİŞİ (Geri alma sistemi)
+// ═══════════════════════════════════════════════════════
+
+model Revision {
+  id         String   @id @default(cuid())
+  entityType String   // 'page', 'blog_post', 'platform', 'solution', 'global_component'
+  entityId   String
+  before     Json
+  after      Json
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  summary    String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+// ═══════════════════════════════════════════════════════
+// ANALİTİK & İSTATİSTİKLER
+// ═══════════════════════════════════════════════════════
+
+model DailyStats {
+  id                   String   @id @default(cuid())
+  date                 DateTime @unique
+  partnerixStarts      Int      @default(0)
+  partnerixCompletions Int      @default(0)
+  partnerixConversions Int      @default(0)
+  contactForms         Int      @default(0)
+  consultingForms      Int      @default(0)
+  newsletters          Int      @default(0)
+  createdAt            DateTime @default(now())
+}
