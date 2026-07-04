@@ -5,6 +5,7 @@ import type { Variants } from "framer-motion";
 import { Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import PartnerixScene from "./PartnerixScene";
 import type { HeroSectionContent } from "@prisma/client";
+import type { PartnerixCharacterFull } from "@/lib/actions/partnerix-character";
 
 /* ── Animasyon varyantları ─────────────────────────── */
 const container: Variants = {
@@ -20,12 +21,18 @@ const TRUST_SIGNALS = ["Ücretsiz danışmanlık", "Tarafsız öneriler", "Bağl
 
 interface Props {
   content: HeroSectionContent;
+  character?: PartnerixCharacterFull;
 }
 
 /* ── Hero ──────────────────────────────────────────── */
-export default function Hero({ content }: Props) {
+export default function Hero({ content, character }: Props) {
   const gradient = content.gradient || "linear-gradient(90deg, #00D084 0%, #18AFC1 100%)";
   const bgColor = content.bgColor || "#F3F4FB";
+
+  const desktopVisible = character?.desktopVisible ?? true;
+  const mobileVisible = character?.mobileVisible ?? false;
+  const positionClass = character?.position === "left" ? "lg:justify-start" : "lg:justify-center";
+  const visibilityClass = `${mobileVisible ? "flex" : "hidden"} ${desktopVisible ? "lg:flex" : "lg:hidden"}`;
 
   return (
     <section
@@ -138,8 +145,17 @@ export default function Hero({ content }: Props) {
 
           {/* ── Sağ: Partnerix ürün demosu ──────────── */}
           {content.showPartnerixDemo && (
-            <div className="hidden lg:flex lg:justify-center">
-              <PartnerixScene welcomeMessage={content.partnerixMessage ?? undefined} />
+            <div
+              className={`${visibilityClass} ${positionClass}`}
+              style={{
+                marginTop: character?.marginTop || undefined,
+                marginRight: character?.marginRight || undefined,
+                marginBottom: character?.marginBottom || undefined,
+                marginLeft: character?.marginLeft || undefined,
+                padding: character?.padding || undefined,
+              }}
+            >
+              <PartnerixScene welcomeMessage={content.partnerixMessage ?? undefined} character={character} />
             </div>
           )}
 

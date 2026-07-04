@@ -492,6 +492,8 @@ model Platform {
   seoDesc     String?           @db.Text
   features    PlatformFeature[]
   partners    PartnerPlatform[]
+  partnerixOptionScores          PartnerixOptionPlatformScore[]
+  partnerixResultRecommendations PartnerixResultPlatform[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -526,6 +528,8 @@ model Solution {
   seoDesc   String?           @db.Text
   features  SolutionFeature[]
   partners  PartnerSolution[]
+  partnerixOptionScores          PartnerixOptionSolutionScore[]
+  partnerixResultRecommendations PartnerixResultSolution[]
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 }
@@ -572,6 +576,7 @@ model Partner {
   media      PartnerMedia[]
   platforms  PartnerPlatform[]
   solutions  PartnerSolution[]
+  partnerixResultRecommendations PartnerixResultPartner[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -666,12 +671,14 @@ model PartnerixFlow {
   name       String
   slug       String             @unique
   active     Boolean            @default(false)
+  status     Status             @default(DRAFT)
   robotImage String?
   welcomeMsg String?
   bubbles    PartnerixBubble[]
   steps      PartnerixStep[]
   results    PartnerixResult[]
   sessions   PartnerixSession[]
+  character  PartnerixCharacter?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 }
@@ -704,6 +711,32 @@ model PartnerixOption {
   color    String?
   order    Int
   resultId String?
+  result   PartnerixResult? @relation(fields: [resultId], references: [id])
+
+  platformScores PartnerixOptionPlatformScore[]
+  solutionScores PartnerixOptionSolutionScore[]
+}
+
+model PartnerixOptionPlatformScore {
+  id         String          @id @default(cuid())
+  optionId   String
+  option     PartnerixOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  platformId String
+  platform   Platform        @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  score      Int             @default(1)
+
+  @@unique([optionId, platformId])
+}
+
+model PartnerixOptionSolutionScore {
+  id         String          @id @default(cuid())
+  optionId   String
+  option     PartnerixOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  solutionId String
+  solution   Solution        @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  score      Int             @default(1)
+
+  @@unique([optionId, solutionId])
 }
 
 model PartnerixResult {
@@ -716,6 +749,38 @@ model PartnerixResult {
   ctaHref     String?
   ctaType     String        @default("whatsapp")
   conversions Int           @default(0)
+
+  options              PartnerixOption[]
+  recommendedPlatforms PartnerixResultPlatform[]
+  recommendedSolutions PartnerixResultSolution[]
+  recommendedPartners  PartnerixResultPartner[]
+}
+
+model PartnerixResultPlatform {
+  resultId   String
+  result     PartnerixResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  platformId String
+  platform   Platform        @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([resultId, platformId])
+}
+
+model PartnerixResultSolution {
+  resultId   String
+  result     PartnerixResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  solutionId String
+  solution   Solution        @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+
+  @@id([resultId, solutionId])
+}
+
+model PartnerixResultPartner {
+  resultId  String
+  result    PartnerixResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  partnerId String
+  partner   Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@id([resultId, partnerId])
 }
 
 model PartnerixSession {
@@ -728,6 +793,126 @@ model PartnerixSession {
   leadId      String?
   lead        Lead?         @relation(fields: [leadId], references: [id])
   createdAt   DateTime      @default(now())
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTNERİX 3D KARAKTER (Görsel/Davranışsal CMS)
+// ═══════════════════════════════════════════════════════
+
+model PartnerixCharacter {
+  id     String        @id @default(cuid())
+  flowId String        @unique
+  flow   PartnerixFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  // Karakter Bilgisi
+  name        String  @default("Partnerix")
+  subtitle    String?
+  description String? @db.Text
+  avatar      String?
+  model3d     String?
+  defaultPose String  @default("idle")
+  scale       Float   @default(1)
+  posX        Float   @default(0)
+  posY        Float   @default(0)
+  posZ        Float   @default(0)
+  rotX        Float   @default(0)
+  rotY        Float   @default(0)
+  rotZ        Float   @default(0)
+  shadowEnabled      Boolean @default(true)
+  backgroundEffect   String  @default("none")
+  glowEnabled        Boolean @default(false)
+  glowColor          String  @default("#4F46E5")
+  robotColor         String  @default("#4F46E5")
+  neonColorPrimary   String  @default("#00D084")
+  neonColorSecondary String  @default("#18AFC1")
+  theme              String  @default("light")
+
+  // Konuşma Balonu
+  bubbleBg               String  @default("#FFFFFF")
+  bubbleTextColor        String  @default("#1E293B")
+  bubbleBorderRadius     Int     @default(16)
+  bubbleShadow           String  @default("0 2px 10px rgba(15,23,42,0.05)")
+  bubbleWidth            Int     @default(280)
+  bubbleFontFamily       String?
+  bubbleFontSize         Int     @default(13)
+  bubbleAnimationDuration Float  @default(0.38)
+
+  // Ses (altyapı hazır, henüz kullanılmıyor)
+  audioEnabled        Boolean @default(false)
+  audioFile           String?
+  audioVolume         Float   @default(0.7)
+  audioAutoplay       Boolean @default(false)
+  audioSpeakingEffect Boolean @default(false)
+
+  // Ana Sayfa Yerleşimi
+  position       String  @default("right")
+  desktopVisible Boolean @default(true)
+  mobileVisible  Boolean @default(false)
+  height         String  @default("460px")
+  width          String  @default("680px")
+  marginTop      String?
+  marginRight    String?
+  marginBottom   String?
+  marginLeft     String?
+  padding        String?
+
+  // Karşılama Ekranı
+  welcomeTitle       String?
+  welcomeSubtitle    String?
+  welcomeMessage     String? @db.Text
+  firstBubbleText    String?
+  startButtonText    String  @default("Başla")
+  welcomeAnimationId String?
+  welcomeAnimation   PartnerixAnimation? @relation("WelcomeAnimation", fields: [welcomeAnimationId], references: [id])
+
+  animations PartnerixAnimation[] @relation("CharacterAnimations")
+  behaviors  PartnerixBehavior[]
+  ctas       PartnerixCta[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Animasyon klip kütüphanesi
+model PartnerixAnimation {
+  id          String             @id @default(cuid())
+  characterId String
+  character   PartnerixCharacter @relation("CharacterAnimations", fields: [characterId], references: [id], onDelete: Cascade)
+  key         String
+  label       String
+  file        String?
+  order       Int                @default(0)
+
+  behaviors  PartnerixBehavior[]
+  welcomeFor PartnerixCharacter[] @relation("WelcomeAnimation")
+
+  @@unique([characterId, key])
+}
+
+// Davranış tetikleyici → animasyon eşlemesi
+model PartnerixBehavior {
+  id          String             @id @default(cuid())
+  characterId String
+  character   PartnerixCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  trigger     String
+  animationId String?
+  animation   PartnerixAnimation? @relation(fields: [animationId], references: [id])
+
+  @@unique([characterId, trigger])
+}
+
+// Robotun altındaki CTA butonları
+model PartnerixCta {
+  id          String             @id @default(cuid())
+  characterId String
+  character   PartnerixCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  label       String
+  href        String?
+  color       String             @default("#3730A3")
+  hoverColor  String?
+  icon        String?
+  enabled     Boolean            @default(true)
+  order       Int                @default(0)
 }
 
 // ═══════════════════════════════════════════════════════

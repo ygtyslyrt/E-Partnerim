@@ -14,7 +14,7 @@ import { getHomepageSections, type HomepageSection, type HomepageSections } from
 function renderSection(section: HomepageSection, data: HomepageSections) {
   switch (section.sectionType) {
     case "hero":
-      return section.heroContent && <Hero content={section.heroContent} />;
+      return section.heroContent && <Hero content={section.heroContent} character={data.partnerixCharacter ?? undefined} />;
     case "platforms":
       return section.platformsContent && (
         <PlatformsPreview config={section.platformsContent} items={data.featuredPlatforms} />

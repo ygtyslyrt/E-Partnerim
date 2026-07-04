@@ -17,6 +17,7 @@ import {
   MessagesSquare,
   Tags,
   Handshake,
+  Sparkles,
 } from "lucide-react"
 import type { UserRole } from "@/types/cms"
 
@@ -36,6 +37,7 @@ const NAV: NavItem[] = [
   { href: "/panel/cozumler",       icon: Lightbulb,       label: "Çözümler" },
   { href: "/panel/partnerler",     icon: Handshake,       label: "Partnerler" },
   { href: "/panel/partnerix",      icon: Bot,             label: "Partnerix" },
+  { href: "/panel/partnerix/karakter", icon: Sparkles,    label: "Partnerix Karakter" },
   { href: "/panel/formlar",        icon: MessagesSquare,  label: "Formlar" },
   { href: "/panel/crm",            icon: Users,           label: "CRM / Leads" },
   { href: "/panel/medya",          icon: ImageIcon,       label: "Medya" },

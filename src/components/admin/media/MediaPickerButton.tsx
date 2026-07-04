@@ -1,9 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { Images, X, Upload, Loader2 } from "lucide-react"
+import { Images, X, Upload, Loader2, Box, Music, File as FileIcon } from "lucide-react"
 import MediaPickerModal from "./MediaPickerModal"
 import type { MediaItem } from "@/lib/actions/media"
+
+function fileNameFromUrl(url: string): string {
+  try {
+    const path = new URL(url).pathname
+    return decodeURIComponent(path.split("/").pop() || url)
+  } catch {
+    return url
+  }
+}
 
 interface Props {
   value: string
@@ -45,7 +54,7 @@ export default function MediaPickerButton({ value, onChange, label = "Görsel", 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-slate-700">{label}</label>
 
-        {value ? (
+        {value ? mimePrefix.startsWith("image/") ? (
           <div className="group relative overflow-hidden rounded-xl border border-[#E4EAF5] bg-slate-50">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={value} alt={label} className="max-h-44 w-full object-contain" />
@@ -65,6 +74,23 @@ export default function MediaPickerButton({ value, onChange, label = "Görsel", 
                 <X size={14} />
               </button>
             </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-xl border border-[#E4EAF5] bg-slate-50 px-4 py-3">
+            {mimePrefix.startsWith("model/") ? (
+              <Box size={20} className="shrink-0 text-[#4F46E5]" />
+            ) : mimePrefix.startsWith("audio/") ? (
+              <Music size={20} className="shrink-0 text-[#00D084]" />
+            ) : (
+              <FileIcon size={20} className="shrink-0 text-slate-400" />
+            )}
+            <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{fileNameFromUrl(value)}</span>
+            <button type="button" onClick={() => setOpen(true)} className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition border border-[#E4EAF5]">
+              Değiştir
+            </button>
+            <button type="button" onClick={() => onChange("")} className="shrink-0 rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition">
+              <X size={14} />
+            </button>
           </div>
         ) : (
           <div

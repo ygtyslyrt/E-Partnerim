@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText, File, Star } from "lucide-react"
+import { FileText, File, Star, Box, Music } from "lucide-react"
 import type { MediaItem } from "@/lib/actions/media"
 
 interface Props {
@@ -51,6 +51,16 @@ export default function MediaCard({ item, selected, active, onSelect, onOpen, on
           <div className="flex flex-col items-center gap-2">
             <FileText size={36} className="text-red-400" />
             <span className="text-[10px] font-bold text-red-400 tracking-widest">PDF</span>
+          </div>
+        ) : item.mimeType.startsWith("model/") ? (
+          <div className="flex flex-col items-center gap-2">
+            <Box size={36} className="text-[#4F46E5]" />
+            <span className="text-[10px] font-bold text-[#4F46E5] tracking-widest">3D</span>
+          </div>
+        ) : item.mimeType.startsWith("audio/") ? (
+          <div className="flex flex-col items-center gap-2">
+            <Music size={36} className="text-[#00D084]" />
+            <span className="text-[10px] font-bold text-[#00D084] tracking-widest">SES</span>
           </div>
         ) : (
           <File size={36} className="text-slate-300" />

@@ -11,6 +11,8 @@ import {
   Calendar, CalendarDays, Eye,
   Check, ArrowRight, Lock, MessageCircle, CheckCircle2,
 } from "lucide-react";
+import { getIcon } from "@/lib/icon-map";
+import type { PartnerixCharacterFull } from "@/lib/actions/partnerix-character";
 
 /* ─── Sabitler ─────────────────────────────────────────────────── */
 const PARTNERIX = "#4F46E5";
@@ -100,7 +102,12 @@ const slide: Variants = {
    Konuşma Balonları
    Kart yok. Messenger yok. Sadece yüzen pill'ler.
 ──────────────────────────────────────────────────────────────── */
-function SpeechBubbles({ welcomeMessage }: { welcomeMessage?: string }) {
+interface BubbleStyle {
+  bg: string; text: string; radius: number; shadow: string;
+  width: number; fontFamily?: string; fontSize: number; animDuration: number;
+}
+
+function SpeechBubbles({ welcomeMessage, style }: { welcomeMessage?: string; style: BubbleStyle }) {
   const bubbles = welcomeMessage ? [welcomeMessage, ...BUBBLES.slice(1)] : BUBBLES
   return (
     <div className="flex flex-col gap-1.5">
@@ -109,14 +116,19 @@ function SpeechBubbles({ welcomeMessage }: { welcomeMessage?: string }) {
           key={i}
           initial={{ opacity: 0, y: 8, x: -6 }}
           animate={{ opacity: 1, y: 0, x: 0 }}
-          transition={{ delay: 0.3 + i * 0.38, duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.3 + i * style.animDuration, duration: style.animDuration, ease: [0.22, 1, 0.36, 1] }}
           className="w-fit"
         >
           <div
-            className="rounded-2xl border border-[#E4EAF5] bg-white px-4 py-2 shadow-[0_2px_10px_rgba(15,23,42,0.05)]"
-            style={{ maxWidth: 280 }}
+            className="border border-[#E4EAF5] px-4 py-2"
+            style={{
+              maxWidth: style.width,
+              backgroundColor: style.bg,
+              borderRadius: style.radius,
+              boxShadow: style.shadow,
+            }}
           >
-            <p className="text-[12.5px] leading-snug text-[#1E293B]">{text}</p>
+            <p className="leading-snug" style={{ color: style.text, fontSize: style.fontSize, fontFamily: style.fontFamily }}>{text}</p>
           </div>
         </motion.div>
       ))}
@@ -128,17 +140,27 @@ function SpeechBubbles({ welcomeMessage }: { welcomeMessage?: string }) {
    Partnerix Karakteri
    Kart yok. Sahnenin içinde bağımsız. Animasyonlu.
 ──────────────────────────────────────────────────────────────── */
-function RobotCharacter() {
+interface RobotStyle {
+  color: string; shadowEnabled: boolean; glowEnabled: boolean; glowColor: string; neonSecondary: string; backgroundEffect: string;
+}
+
+function RobotCharacter({ style }: { style: RobotStyle }) {
+  const glowBackground = style.backgroundEffect === "gradient"
+    ? `linear-gradient(135deg, ${style.glowColor} 0%, ${style.neonSecondary} 100%)`
+    : style.glowColor;
+
   return (
     <div
       className="relative flex-shrink-0"
       style={{ width: 200, height: CARD_H }}
     >
       {/* Zemin parıltısı */}
-      <div
-        className="absolute bottom-0 left-1/2 h-16 w-40 -translate-x-1/2 rounded-full opacity-[0.10]"
-        style={{ background: PARTNERIX, filter: "blur(28px)" }}
-      />
+      {style.glowEnabled && style.backgroundEffect !== "none" && (
+        <div
+          className="absolute bottom-0 left-1/2 h-16 w-40 -translate-x-1/2 rounded-full opacity-[0.10]"
+          style={{ background: glowBackground, filter: "blur(28px)" }}
+        />
+      )}
 
       {/* Float */}
       <motion.div
@@ -171,7 +193,7 @@ function RobotCharacter() {
                 alt="Partnerix AI Danışmanı"
                 fill
                 className="object-contain object-bottom"
-                style={{ filter: "drop-shadow(0 14px 28px rgba(79,70,229,0.10))" }}
+                style={style.shadowEnabled ? { filter: "drop-shadow(0 14px 28px rgba(79,70,229,0.10))" } : undefined}
                 priority
               />
             </motion.div>
@@ -180,12 +202,14 @@ function RobotCharacter() {
       </motion.div>
 
       {/* Ayak altı gölgesi */}
-      <motion.div
-        animate={{ scaleX: [1, 0.74, 1], opacity: [0.13, 0.04, 0.13] }}
-        transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-0 left-1/2 h-2.5 w-28 -translate-x-1/2 rounded-full"
-        style={{ background: "#1E1B4B", filter: "blur(8px)" }}
-      />
+      {style.shadowEnabled && (
+        <motion.div
+          animate={{ scaleX: [1, 0.74, 1], opacity: [0.13, 0.04, 0.13] }}
+          transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-0 left-1/2 h-2.5 w-28 -translate-x-1/2 rounded-full"
+          style={{ background: "#1E1B4B", filter: "blur(8px)" }}
+        />
+      )}
     </div>
   );
 }
@@ -194,33 +218,42 @@ function RobotCharacter() {
    Wizard Kartı
    Tek beyaz kart. İçinde liste seçenekler. Sabit yükseklik.
 ──────────────────────────────────────────────────────────────── */
+interface CtaDef { label: string; href: string | null; color: string; hoverColor: string | null; icon: string | null }
+
 function WizardCard({
-  step, pending, onSelect, onNext, completed,
+  step, pending, onSelect, onNext, completed, accentColor, gradientEnd, isDark, ctas,
 }: {
   step: number; pending: string | null;
   onSelect: (id: string) => void; onNext: () => void; completed: boolean;
+  accentColor: string; gradientEnd: string; isDark: boolean; ctas: CtaDef[];
 }) {
   const def   = STEPS[step];
   const total = STEPS.length;
   const pct   = completed ? 100 : Math.round((step / total) * 100);
+  const cardBg = isDark ? "#0F172A" : "#FFFFFF";
+  const cardText = isDark ? "#F1F5F9" : "#0F172A";
+  const cardBorder = isDark ? "#1E293B" : "#E4EBF5";
+  const effectiveCtas = ctas.length > 0 ? ctas : [{ label: "WhatsApp'ta Danışmanlık Al", href: WA_URL, color: DEVAM_BG, hoverColor: null, icon: "MessageCircle" }];
 
   return (
     <div
-      className="flex-1 overflow-hidden rounded-2xl border border-[#E4EBF5] bg-white"
+      className="flex-1 overflow-hidden rounded-2xl border"
       style={{
         height: CARD_H,
+        backgroundColor: cardBg,
+        borderColor: cardBorder,
         boxShadow: "0 4px 24px rgba(15,23,42,0.07), 0 1px 3px rgba(15,23,42,0.04)",
       }}
     >
       <div className="flex h-full flex-col">
 
         {/* Başlık + ilerleme */}
-        <div className="flex-shrink-0 border-b border-[#F1F5F9] px-5 py-3.5">
+        <div className="flex-shrink-0 border-b px-5 py-3.5" style={{ borderColor: cardBorder }}>
           <div className="flex items-center justify-between">
-            <span className="text-[13.5px] font-bold text-[#0F172A]">İhtiyaç Analiziniz</span>
+            <span className="text-[13.5px] font-bold" style={{ color: cardText }}>İhtiyaç Analiziniz</span>
             <span
               className="text-[12px] font-semibold tabular-nums"
-              style={{ color: completed ? "#059669" : PARTNERIX }}
+              style={{ color: completed ? "#059669" : accentColor }}
             >
               {completed ? "Tamamlandı ✓" : `${step + 1} / ${total}`}
             </span>
@@ -228,7 +261,7 @@ function WizardCard({
           <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F5F9]">
             <motion.div
               className="h-full rounded-full"
-              style={{ background: `linear-gradient(90deg, ${PARTNERIX} 0%, #818CF8 100%)` }}
+              style={{ background: `linear-gradient(90deg, ${accentColor} 0%, ${gradientEnd} 100%)` }}
               animate={{ width: `${pct}%` }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             />
@@ -250,21 +283,29 @@ function WizardCard({
               <CheckCircle2 className="h-7 w-7 text-[#00D084]" />
             </motion.div>
             <div className="space-y-1.5">
-              <p className="text-[14px] font-bold text-[#0F172A]">Analiz Tamamlandı!</p>
+              <p className="text-[14px] font-bold" style={{ color: cardText }}>Analiz Tamamlandı!</p>
               <p className="text-[11.5px] leading-relaxed text-[#64748B]">
                 Size özel çözümler hazırlanıyor…
               </p>
             </div>
-            <a
-              href={WA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: DEVAM_BG }}
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp&apos;ta Danışmanlık Al
-            </a>
+            <div className="flex w-full flex-col gap-2">
+              {effectiveCtas.map((cta, i) => {
+                const Icon = getIcon(cta.icon, MessageCircle)
+                return (
+                  <a
+                    key={i}
+                    href={cta.href ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                    style={{ background: cta.color }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {cta.label}
+                  </a>
+                )
+              })}
+            </div>
           </motion.div>
         ) : (
           <>
@@ -277,7 +318,8 @@ function WizardCard({
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  className="text-[12.5px] font-semibold leading-snug text-[#0F172A]"
+                  className="text-[12.5px] font-semibold leading-snug"
+                  style={{ color: cardText }}
                 >
                   {def.question}
                 </motion.p>
@@ -380,7 +422,12 @@ function WizardCard({
    │  sol, bağımsız  sağ, flex-1                │
    └─────────────────────────────────────────────┘
 ──────────────────────────────────────────────────────────────── */
-export default function PartnerixScene({ welcomeMessage }: { welcomeMessage?: string }) {
+interface Props {
+  welcomeMessage?: string;
+  character?: PartnerixCharacterFull;
+}
+
+export default function PartnerixScene({ welcomeMessage, character }: Props) {
   const [step,    setStep]    = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [done,    setDone]    = useState(false);
@@ -392,25 +439,56 @@ export default function PartnerixScene({ welcomeMessage }: { welcomeMessage?: st
     else setStep((s) => s + 1);
   }
 
+  const robotStyle: RobotStyle = {
+    color: character?.robotColor ?? PARTNERIX,
+    shadowEnabled: character?.shadowEnabled ?? true,
+    glowEnabled: character?.glowEnabled ?? true,
+    glowColor: character?.glowColor ?? PARTNERIX,
+    neonSecondary: character?.neonColorSecondary ?? "#818CF8",
+    backgroundEffect: character?.backgroundEffect ?? "glow",
+  };
+
+  const bubbleStyle: BubbleStyle = {
+    bg: character?.bubbleBg ?? "#FFFFFF",
+    text: character?.bubbleTextColor ?? "#1E293B",
+    radius: character?.bubbleBorderRadius ?? 16,
+    shadow: character?.bubbleShadow ?? "0 2px 10px rgba(15,23,42,0.05)",
+    width: character?.bubbleWidth ?? 280,
+    fontFamily: character?.bubbleFontFamily ?? undefined,
+    fontSize: character?.bubbleFontSize ?? 13,
+    animDuration: character?.bubbleAnimationDuration ?? 0.38,
+  };
+
+  const ctas: CtaDef[] = (character?.ctas ?? [])
+    .filter((c) => c.enabled)
+    .map((c) => ({ label: c.label, href: c.href, color: c.color, hoverColor: c.hoverColor, icon: c.icon }));
+
+  const firstBubble = character?.firstBubbleText || welcomeMessage;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-      className="flex w-full max-w-[680px] flex-col gap-3"
+      className="flex w-full flex-col gap-3"
+      style={{ maxWidth: character?.width || "680px" }}
     >
       {/* 1. Konuşma balonları — robotun üstünde, kart/container yok */}
-      <SpeechBubbles welcomeMessage={welcomeMessage} />
+      <SpeechBubbles welcomeMessage={firstBubble} style={bubbleStyle} />
 
       {/* 2. Robot (sol) + Wizard kart (sağ) — aynı sahne, items-end */}
       <div className="flex items-end gap-5">
-        <RobotCharacter />
+        <RobotCharacter style={robotStyle} />
         <WizardCard
           step={step}
           pending={pending}
           onSelect={setPending}
           onNext={handleNext}
           completed={done}
+          accentColor={robotStyle.color}
+          gradientEnd={robotStyle.neonSecondary}
+          isDark={(character?.theme ?? "light") === "dark"}
+          ctas={ctas}
         />
       </div>
     </motion.div>

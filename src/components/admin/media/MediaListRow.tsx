@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText, File, Star } from "lucide-react"
+import { FileText, File, Star, Box, Music } from "lucide-react"
 import type { MediaItem } from "@/lib/actions/media"
 
 interface Props {
@@ -58,6 +58,10 @@ export default function MediaListRow({ item, selected, active, onSelect, onOpen,
           <img src={isSvg ? item.url : thumb} alt={item.alt ?? item.originalName} className="h-full w-full object-cover" loading="lazy" />
         ) : item.mimeType === "application/pdf" ? (
           <FileText size={18} className="text-red-400" />
+        ) : item.mimeType.startsWith("model/") ? (
+          <Box size={18} className="text-[#4F46E5]" />
+        ) : item.mimeType.startsWith("audio/") ? (
+          <Music size={18} className="text-[#00D084]" />
         ) : (
           <File size={18} className="text-slate-300" />
         )}

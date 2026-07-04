@@ -14,6 +14,8 @@ const MIME_FILTERS = [
   { label: "Görseller", value: "image/" },
   { label: "PDF", value: "application/pdf" },
   { label: "SVG", value: "image/svg+xml" },
+  { label: "3D Model", value: "model/" },
+  { label: "Ses", value: "audio/" },
 ]
 
 const SORT_OPTIONS: { label: string; value: MediaSortBy }[] = [

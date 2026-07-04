@@ -18,6 +18,16 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+// Tarayıcıların .glb/.gltf ve ses dosyaları için MIME algılaması tutarsız olduğundan
+// (çoğunlukla application/octet-stream ya da boş) dosya seçici bu tipler için mime
+// joker karakteri yerine uzantıya göre filtreler.
+function acceptFor(mimePrefix: string): string {
+  if (mimePrefix.startsWith("model/")) return ".glb,.gltf"
+  if (mimePrefix.startsWith("audio/")) return ".mp3,.wav,.ogg"
+  if (mimePrefix) return `${mimePrefix}*`
+  return "image/*,application/pdf"
+}
+
 export default function MediaPickerModal({ isOpen, onClose, onSelect, mimePrefix = "", title = "Medyadan Seç" }: Props) {
   const [files, setFiles] = useState<MediaItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -192,7 +202,7 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect, mimePrefix
       <input
         ref={inputRef}
         type="file"
-        accept={mimePrefix ? `${mimePrefix}*` : "image/*,application/pdf"}
+        accept={acceptFor(mimePrefix)}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = "" }}
         className="hidden"
       />

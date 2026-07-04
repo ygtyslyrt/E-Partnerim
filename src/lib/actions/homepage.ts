@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { getSiteSettings } from "@/lib/actions/settings"
 import { getPublishedBlogPosts } from "@/lib/actions/blog"
+import { getPartnerixCharacter } from "@/lib/actions/partnerix-character"
 
 // Ana sayfa — herkese açık, auth gerektirmez. Tüm bölümleri tek sorguda,
 // görünürlük ve sıraya göre getirir. Platformlar/Çözümler bölümleri için
@@ -43,8 +44,9 @@ export async function getHomepageSections() {
   const needsPlatforms = sections.some((s) => s.sectionType === "platforms")
   const needsSolutions = sections.some((s) => s.sectionType === "solutions")
   const blogSection = sections.find((s) => s.sectionType === "blog")
+  const heroSection = sections.find((s) => s.sectionType === "hero")
 
-  const [featuredPlatforms, featuredSolutions, blogPosts] = await Promise.all([
+  const [featuredPlatforms, featuredSolutions, blogPosts, partnerixCharacter] = await Promise.all([
     needsPlatforms
       ? prisma.platform.findMany({
           where: { status: "PUBLISHED", featured: true },
@@ -64,9 +66,10 @@ export async function getHomepageSections() {
     blogSection
       ? getPublishedBlogPosts(blogSection.blogContent?.showCount ?? 4, blogSection.blogContent?.categoryFilter)
       : Promise.resolve([]),
+    heroSection?.heroContent?.showPartnerixDemo ? getPartnerixCharacter() : Promise.resolve(null),
   ])
 
-  return { sections, featuredPlatforms, featuredSolutions, blogPosts, settings }
+  return { sections, featuredPlatforms, featuredSolutions, blogPosts, partnerixCharacter, settings }
 }
 
 export type HomepageSections = Awaited<ReturnType<typeof getHomepageSections>>
