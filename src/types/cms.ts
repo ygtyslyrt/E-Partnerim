@@ -10,6 +10,8 @@ export type FormStatusType = "UNREAD" | "READ" | "REPLIED" | "SPAM"
 // Sayfa bölüm tipleri (sectionType string değerleri)
 export type SectionType =
   | "hero"
+  | "platforms"
+  | "solutions"
   | "services"
   | "how-it-works"
   | "why-us"

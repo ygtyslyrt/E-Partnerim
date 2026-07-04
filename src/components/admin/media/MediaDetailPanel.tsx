@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Copy, Check, Trash2, ExternalLink, FileText, File } from "lucide-react"
-import { updateMedia } from "@/lib/actions/media"
-import type { MediaItem } from "@/lib/actions/media"
+import Link from "next/link"
+import { X, Copy, Check, Trash2, ExternalLink, FileText, File, Link2, Loader2 } from "lucide-react"
+import { updateMedia, getMediaUsage } from "@/lib/actions/media"
+import type { MediaItem, MediaUsageItem } from "@/lib/actions/media"
 
 interface Props {
   item: MediaItem
@@ -26,9 +27,12 @@ export default function MediaDetailPanel({ item, onUpdate, onDelete, onClose }: 
   const [alt, setAlt] = useState(item.alt ?? "")
   const [title, setTitle] = useState(item.title ?? "")
   const [desc, setDesc] = useState(item.description ?? "")
+  const [filename, setFilename] = useState(item.originalName)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [usage, setUsage] = useState<MediaUsageItem[]>([])
+  const [loadingUsage, setLoadingUsage] = useState(true)
 
   const isImage = item.mimeType.startsWith("image/")
   const isSvg = item.mimeType === "image/svg+xml"
@@ -38,12 +42,21 @@ export default function MediaDetailPanel({ item, onUpdate, onDelete, onClose }: 
     setAlt(item.alt ?? "")
     setTitle(item.title ?? "")
     setDesc(item.description ?? "")
+    setFilename(item.originalName)
     setConfirmDelete(false)
-  }, [item.id, item.alt, item.title, item.description])
+  }, [item.id, item.alt, item.title, item.description, item.originalName])
+
+  useEffect(() => {
+    setLoadingUsage(true)
+    getMediaUsage(item.id).then((rows) => {
+      setUsage(rows)
+      setLoadingUsage(false)
+    })
+  }, [item.id])
 
   async function handleSave() {
     setSaving(true)
-    const res = await updateMedia(item.id, { alt, title, description: desc })
+    const res = await updateMedia(item.id, { alt, title, description: desc, originalName: filename })
     setSaving(false)
     if (res.success && res.data) onUpdate(res.data)
   }
@@ -115,8 +128,45 @@ export default function MediaDetailPanel({ item, onUpdate, onDelete, onClose }: 
             Yeni sekmede aç
           </a>
 
+          {/* Usage info */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+              <Link2 size={12} />
+              Kullanıldığı Yerler
+            </label>
+            {loadingUsage ? (
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Loader2 size={13} className="animate-spin" />
+                Yükleniyor...
+              </div>
+            ) : usage.length === 0 ? (
+              <p className="text-xs text-slate-400">Bu dosya herhangi bir içerikte kullanılmıyor.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {usage.map((u) => (
+                  <li key={u.id}>
+                    <Link
+                      href={u.entityHref}
+                      target="_blank"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-[#E4EAF5] bg-[#F8FAFC] px-2.5 py-1.5 text-xs text-slate-600 hover:border-[#4F46E5]/30 hover:bg-[#EEF2FF] transition"
+                    >
+                      <span className="truncate">{u.entityLabel}</span>
+                      <span className="shrink-0 rounded-full bg-white border border-[#E4EAF5] px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+                        {u.fieldName}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {/* Alt text */}
           <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Dosya Adı</label>
+              <input type="text" value={filename} onChange={(e) => setFilename(e.target.value)} placeholder="Dosya adı..." className={inputCls} />
+            </div>
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Alt Metin</label>
               <input type="text" value={alt} onChange={(e) => setAlt(e.target.value)} placeholder="Görsel açıklaması..." className={inputCls} />

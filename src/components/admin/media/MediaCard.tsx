@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText, File } from "lucide-react"
+import { FileText, File, Star } from "lucide-react"
 import type { MediaItem } from "@/lib/actions/media"
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
   active: boolean
   onSelect: (id: string, multi: boolean) => void
   onOpen: (item: MediaItem) => void
+  onToggleFavorite: (id: string) => void
+  onDragStart: (e: React.DragEvent, item: MediaItem) => void
 }
 
 function formatBytes(bytes: number) {
@@ -17,13 +19,15 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-export default function MediaCard({ item, selected, active, onSelect, onOpen }: Props) {
+export default function MediaCard({ item, selected, active, onSelect, onOpen, onToggleFavorite, onDragStart }: Props) {
   const isImage = item.mimeType.startsWith("image/")
   const isSvg = item.mimeType === "image/svg+xml"
   const thumb = item.thumbnailUrl || (isImage ? item.url : null)
 
   return (
     <div
+      draggable
+      onDragStart={(e) => onDragStart(e, item)}
       onClick={(e) => { onSelect(item.id, e.ctrlKey || e.metaKey); if (!e.ctrlKey && !e.metaKey) onOpen(item) }}
       className={`group relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${
         active
@@ -68,6 +72,19 @@ export default function MediaCard({ item, selected, active, onSelect, onOpen }: 
           </svg>
         )}
       </div>
+
+      {/* Favorite star */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.id) }}
+        className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-md transition-all ${
+          item.isFavorite
+            ? "text-amber-400 opacity-100"
+            : "text-white opacity-0 group-hover:opacity-100 drop-shadow"
+        }`}
+        title={item.isFavorite ? "Favorilerden çıkar" : "Favorilere ekle"}
+      >
+        <Star size={15} fill={item.isFavorite ? "currentColor" : "none"} />
+      </button>
 
       {/* Footer */}
       <div className="px-2 py-1.5 border-t border-[#F0F4F8]">

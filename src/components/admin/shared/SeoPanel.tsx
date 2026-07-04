@@ -1,5 +1,7 @@
 "use client"
 
+import MediaPickerButton from "@/components/admin/media/MediaPickerButton"
+
 export interface SeoData {
   seoTitle: string
   seoDesc: string
@@ -76,25 +78,12 @@ export default function SeoPanel({ data, onChange, defaultTitle = "", defaultDes
         />
       </div>
 
-      <div>
-        <label className={cls.label}>
-          <span>OG Görseli</span>
-          <span className="text-xs font-normal text-slate-400">1200×630 px önerilir</span>
-        </label>
-        <input
-          type="url"
-          value={data.ogImage}
-          onChange={(e) => set("ogImage", e.target.value)}
-          placeholder="https://..."
-          className={cls.input}
-        />
-        {data.ogImage && (
-          <div className="mt-2 overflow-hidden rounded-lg border border-[#E4EAF5]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={data.ogImage} alt="OG Preview" className="h-24 w-full object-cover" />
-          </div>
-        )}
-      </div>
+      <MediaPickerButton
+        value={data.ogImage}
+        onChange={(url) => set("ogImage", url)}
+        label="OG Görseli"
+        hint="1200×630 px önerilir"
+      />
     </div>
   )
 }

@@ -4,8 +4,14 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { syncMediaUsage } from "@/lib/media-usage"
 import type { ActionResult, PaginatedResult } from "@/types/cms"
 import type { BlogPost, BlogCategory } from "@prisma/client"
+
+function n(v: FormDataEntryValue | null): string | null {
+  const s = v?.toString().trim()
+  return s || null
+}
 
 export async function getBlogPosts(
   page = 1,
@@ -53,6 +59,10 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
   const excerpt = formData.get("excerpt") as string
   const categoryId = formData.get("categoryId") as string | null
   const status = (formData.get("status") as string) || "DRAFT"
+  const coverImage = n(formData.get("coverImage"))
+  const ogImage = n(formData.get("ogImage"))
+  const seoTitle = n(formData.get("seoTitle"))
+  const seoDesc = n(formData.get("seoDesc"))
 
   if (!title || !slug || !content) {
     return { success: false, error: "Başlık, slug ve içerik zorunludur" }
@@ -70,8 +80,11 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
         publishedAt: status === "PUBLISHED" ? new Date() : null,
         authorId: session.user.id,
         readTime: Math.ceil(content.split(/\s+/).length / 200),
+        coverImage, ogImage, seoTitle, seoDesc,
       },
     })
+
+    await syncMediaUsage("blog_post", post.id, post.title, `/blog/${post.slug}`, { coverImage, ogImage })
 
     revalidatePath("/panel/blog")
     revalidatePath("/blog")
@@ -87,7 +100,7 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
 export async function updateBlogPost(
   id: string,
   formData: FormData
-): Promise<ActionResult> {
+): Promise<ActionResult<{ slug: string }>> {
   const session = await auth()
   if (!session?.user || session.user.role === "VIEWER") {
     return { success: false, error: "Yetkisiz erişim" }
@@ -98,9 +111,13 @@ export async function updateBlogPost(
   const excerpt = formData.get("excerpt") as string
   const categoryId = formData.get("categoryId") as string | null
   const status = formData.get("status") as string
+  const coverImage = n(formData.get("coverImage"))
+  const ogImage = n(formData.get("ogImage"))
+  const seoTitle = n(formData.get("seoTitle"))
+  const seoDesc = n(formData.get("seoDesc"))
 
   try {
-    await prisma.blogPost.update({
+    const post = await prisma.blogPost.update({
       where: { id },
       data: {
         title,
@@ -110,12 +127,15 @@ export async function updateBlogPost(
         status: status as "DRAFT" | "PUBLISHED",
         publishedAt: status === "PUBLISHED" ? new Date() : undefined,
         readTime: Math.ceil(content.split(/\s+/).length / 200),
+        coverImage, ogImage, seoTitle, seoDesc,
       },
     })
 
+    await syncMediaUsage("blog_post", post.id, post.title, `/blog/${post.slug}`, { coverImage, ogImage })
+
     revalidatePath("/panel/blog")
     revalidatePath("/blog")
-    return { success: true }
+    return { success: true, data: { slug: post.slug } }
   } catch (e) {
     return { success: false, error: (e as Error).message }
   }
@@ -129,6 +149,7 @@ export async function deleteBlogPost(id: string): Promise<ActionResult> {
 
   try {
     await prisma.blogPost.delete({ where: { id } })
+    await prisma.mediaUsage.deleteMany({ where: { entityType: "blog_post", entityId: id } })
     revalidatePath("/panel/blog")
     revalidatePath("/blog")
     return { success: true }
@@ -158,6 +179,18 @@ export async function toggleBlogStatus(id: string, currentStatus: string): Promi
   } catch (e) {
     return { success: false, error: (e as Error).message }
   }
+}
+
+export async function getPublishedBlogPosts(limit: number, categorySlug?: string | null) {
+  return prisma.blogPost.findMany({
+    where: {
+      status: "PUBLISHED",
+      ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+    },
+    include: { category: true },
+    orderBy: { publishedAt: "desc" },
+    take: limit,
+  })
 }
 
 export async function getCategories() {

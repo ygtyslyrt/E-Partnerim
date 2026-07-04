@@ -171,6 +171,8 @@ model PageSectionMeta {
   socialProofContent SocialProofSectionContent?
   ctaContent         CtaSectionContent?
   blogContent        BlogSectionConfig?
+  platformsContent   PlatformsSectionConfig?
+  solutionsContent   SolutionsSectionConfig?
 
   @@unique([pageId, sectionType])
 }
@@ -189,6 +191,28 @@ model HeroSectionContent {
   bgColor    String?
   bgImage    String?
   dotPattern Boolean         @default(true)
+  showPartnerixDemo Boolean  @default(true)
+  partnerixMessage  String?
+}
+
+// Öne çıkan platformlar bölümü (ana sayfa)
+model PlatformsSectionConfig {
+  id        String          @id @default(cuid())
+  sectionId String          @unique
+  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String?
+  subtitle  String?
+  showCount Int             @default(6)
+}
+
+// Öne çıkan çözümler bölümü (ana sayfa)
+model SolutionsSectionConfig {
+  id        String          @id @default(cuid())
+  sectionId String          @unique
+  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title     String?
+  subtitle  String?
+  showCount Int             @default(6)
 }
 
 // Hizmetler bölümü
@@ -198,6 +222,8 @@ model ServicesSectionContent {
   section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   title     String?
   subtitle  String?
+  ctaLabel  String?
+  ctaUrl    String?
   items     ServiceItem[]
 }
 
@@ -210,6 +236,9 @@ model ServiceItem {
   icon        String
   color       String
   link        String?
+  highlighted Boolean                @default(false)
+  statValue   String?
+  statLabel   String?
   order       Int                    @default(0)
 }
 
@@ -231,17 +260,24 @@ model HowItWorksStep {
   title       String
   description String
   icon        String?
+  highlighted Boolean                  @default(false)
   order       Int                      @default(0)
 }
 
 // Neden biz bölümü
 model WhyUsSectionContent {
-  id        String          @id @default(cuid())
-  sectionId String          @unique
-  section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  title     String?
-  subtitle  String?
-  features  WhyUsFeature[]
+  id          String          @id @default(cuid())
+  sectionId   String          @unique
+  section     PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String?
+  subtitle    String?
+  description String?         @db.Text
+  stat1Value  String?
+  stat1Label  String?
+  stat2Value  String?
+  stat2Label  String?
+  ctaLabel    String?
+  features    WhyUsFeature[]
 }
 
 model WhyUsFeature {
@@ -260,6 +296,7 @@ model SocialProofSectionContent {
   sectionId    String          @unique
   section      PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   title        String?
+  subtitle     String?
   logos        SocialProofLogo[]
   stats        SocialProofStat[]
   testimonials Testimonial[]
@@ -270,7 +307,8 @@ model SocialProofLogo {
   sectionId String
   section   SocialProofSectionContent @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   name      String
-  logo      String
+  logo      String?
+  color     String?
   url       String?
   order     Int                       @default(0)
 }
@@ -302,6 +340,7 @@ model CtaSectionContent {
   id        String          @id @default(cuid())
   sectionId String          @unique
   section   PageSectionMeta @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  eyebrow   String?
   title     String
   subtitle  String?
   buttons   Json
@@ -705,10 +744,12 @@ model Media {
   alt          String?
   title        String?
   description  String?
+  isFavorite   Boolean      @default(false)
   folderId     String?
   folder       MediaFolder? @relation(fields: [folderId], references: [id])
   uploadedBy   String?
   uploader     User?        @relation(fields: [uploadedBy], references: [id])
+  usages       MediaUsage[]
   createdAt    DateTime     @default(now())
 }
 
@@ -720,6 +761,22 @@ model MediaFolder {
   children  MediaFolder[] @relation("FolderTree")
   media     Media[]
   createdAt DateTime      @default(now())
+}
+
+// Medya kullanım takibi — hangi içerik hangi alanda hangi dosyayı kullanıyor
+model MediaUsage {
+  id          String   @id @default(cuid())
+  mediaId     String
+  media       Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  entityType  String // "blog_post" | "platform" | "solution" | "hero"
+  entityId    String
+  entityLabel String
+  entityHref  String
+  fieldName   String // "coverImage" | "ogImage" | "logo" | "bgImage"
+  createdAt   DateTime @default(now())
+
+  @@unique([entityType, entityId, fieldName])
+  @@index([mediaId])
 }
 
 // ═══════════════════════════════════════════════════════

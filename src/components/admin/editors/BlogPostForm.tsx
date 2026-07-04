@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Save, Eye } from "lucide-react"
+import MediaPickerButton from "@/components/admin/media/MediaPickerButton"
+import SeoPanel, { type SeoData } from "@/components/admin/shared/SeoPanel"
 import type { BlogCategory } from "@prisma/client"
 import type { ActionResult } from "@/types/cms"
 
@@ -17,6 +19,10 @@ interface Props {
     content: string
     categoryId: string | null
     status: string
+    coverImage: string | null
+    ogImage: string | null
+    seoTitle: string | null
+    seoDesc: string | null
   }
 }
 
@@ -36,6 +42,12 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
   const [title, setTitle] = useState(initialData?.title ?? "")
   const [slug, setSlug] = useState(initialData?.slug ?? "")
   const [slugManual, setSlugManual] = useState(!!initialData?.slug)
+  const [coverImage, setCoverImage] = useState(initialData?.coverImage ?? "")
+  const [seo, setSeo] = useState<SeoData>({
+    seoTitle: initialData?.seoTitle ?? "",
+    seoDesc: initialData?.seoDesc ?? "",
+    ogImage: initialData?.ogImage ?? "",
+  })
 
   const inputCls =
     "w-full rounded-xl border border-[#E4EAF5] bg-[#F8FAFC] px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10 transition"
@@ -63,6 +75,10 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
       formData.set("content", content)
       if (categoryId) formData.set("categoryId", categoryId)
       if (initialData?.id) formData.set("id", initialData.id)
+      formData.set("coverImage", coverImage)
+      formData.set("ogImage", seo.ogImage)
+      formData.set("seoTitle", seo.seoTitle)
+      formData.set("seoDesc", seo.seoDesc)
 
       const result = await action(formData)
       if (result.success && result.data) {
@@ -130,6 +146,13 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
             ))}
           </select>
         </div>
+
+        <MediaPickerButton
+          value={coverImage}
+          onChange={setCoverImage}
+          label="Kapak Görseli"
+          hint="Blog listesinde ve yazı üstünde gösterilir"
+        />
       </div>
 
       <div className="rounded-2xl border border-[#E4EAF5] bg-white p-6">
@@ -145,6 +168,11 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
         <p className="mt-1.5 text-xs text-slate-400">
           Markdown veya HTML kullanabilirsiniz. TipTap editörü yakında eklenecek.
         </p>
+      </div>
+
+      <div className="rounded-2xl border border-[#E4EAF5] bg-white p-6">
+        <label className={labelCls}>SEO</label>
+        <SeoPanel data={seo} onChange={setSeo} defaultTitle={title} />
       </div>
 
       <div className="flex items-center gap-3">

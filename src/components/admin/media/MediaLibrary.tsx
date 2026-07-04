@@ -1,18 +1,28 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Search, Upload, Trash2, Grid3X3, LayoutList, X, Loader2, Filter, FolderInput } from "lucide-react"
-import { getMedia, deleteMedia, moveMediaToFolder, getFolders } from "@/lib/actions/media"
+import { Search, Upload, Trash2, Grid3X3, LayoutList, X, Loader2, Filter, FolderInput, Star } from "lucide-react"
+import { getMedia, deleteMedia, moveMediaToFolder, getFolders, toggleMediaFavorite } from "@/lib/actions/media"
 import MediaCard from "./MediaCard"
+import MediaListRow from "./MediaListRow"
 import FolderSidebar from "./FolderSidebar"
 import MediaDetailPanel from "./MediaDetailPanel"
-import type { MediaItem, FolderItem } from "@/lib/actions/media"
+import type { MediaItem, FolderItem, MediaSortBy } from "@/lib/actions/media"
 
 const MIME_FILTERS = [
   { label: "Tümü", value: "" },
   { label: "Görseller", value: "image/" },
   { label: "PDF", value: "application/pdf" },
   { label: "SVG", value: "image/svg+xml" },
+]
+
+const SORT_OPTIONS: { label: string; value: MediaSortBy }[] = [
+  { label: "En Yeni", value: "date_desc" },
+  { label: "En Eski", value: "date_asc" },
+  { label: "İsim (A-Z)", value: "name_asc" },
+  { label: "İsim (Z-A)", value: "name_desc" },
+  { label: "Boyut (Büyük)", value: "size_desc" },
+  { label: "Boyut (Küçük)", value: "size_asc" },
 ]
 
 interface Props {
@@ -28,6 +38,9 @@ export default function MediaLibrary({ initialFolders }: Props) {
   const [activeFile, setActiveFile] = useState<MediaItem | null>(null)
   const [search, setSearch] = useState("")
   const [mimeFilter, setMimeFilter] = useState("")
+  const [sortBy, setSortBy] = useState<MediaSortBy>("date_desc")
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -41,9 +54,9 @@ export default function MediaLibrary({ initialFolders }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const loadFiles = useCallback(async (s: string, mime: string, fid: string | null | undefined, p: number) => {
+  const loadFiles = useCallback(async (s: string, mime: string, fid: string | null | undefined, p: number, sort: MediaSortBy, favOnly: boolean) => {
     setLoading(true)
-    const res = await getMedia({ search: s, mimePrefix: mime, folderId: fid, page: p, pageSize: 48 })
+    const res = await getMedia({ search: s, mimePrefix: mime, folderId: fid, page: p, pageSize: 48, sortBy: sort, favoritesOnly: favOnly })
     setFiles(res.data)
     setTotalFiles(res.total)
     setTotalPages(res.totalPages)
@@ -51,14 +64,14 @@ export default function MediaLibrary({ initialFolders }: Props) {
   }, [])
 
   useEffect(() => {
-    loadFiles(search, mimeFilter, activeFolderId, page)
-  }, [activeFolderId, mimeFilter, page, loadFiles, search])
+    loadFiles(search, mimeFilter, activeFolderId, page, sortBy, favoritesOnly)
+  }, [activeFolderId, mimeFilter, page, sortBy, favoritesOnly, loadFiles, search])
 
   function handleSearch(value: string) {
     setSearch(value)
     setPage(1)
     if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => loadFiles(value, mimeFilter, activeFolderId, 1), 350)
+    searchTimer.current = setTimeout(() => loadFiles(value, mimeFilter, activeFolderId, 1, sortBy, favoritesOnly), 350)
   }
 
   function handleFolderSelect(id: string | null) {
@@ -72,6 +85,25 @@ export default function MediaLibrary({ initialFolders }: Props) {
     setMimeFilter(value)
     setPage(1)
     setSelectedIds(new Set())
+  }
+
+  function handleSortChange(value: MediaSortBy) {
+    setSortBy(value)
+    setPage(1)
+  }
+
+  function handleFavoritesToggle() {
+    setFavoritesOnly((prev) => !prev)
+    setPage(1)
+    setSelectedIds(new Set())
+  }
+
+  async function handleToggleFavorite(id: string) {
+    const res = await toggleMediaFavorite(id)
+    if (res.success && res.data) {
+      setFiles((prev) => prev.map((f) => (f.id === id ? res.data! : f)))
+      if (activeFile?.id === id) setActiveFile(res.data)
+    }
   }
 
   function handleSelect(id: string, multi: boolean) {
@@ -123,6 +155,28 @@ export default function MediaLibrary({ initialFolders }: Props) {
       setTotalFiles((t) => t - ids.length)
       setSelectedIds(new Set())
       setMoveTarget(null)
+      await reloadFolderCounts()
+    }
+  }
+
+  function handleCardDragStart(e: React.DragEvent, item: MediaItem) {
+    const ids = selectedIds.has(item.id) && selectedIds.size > 1 ? Array.from(selectedIds) : [item.id]
+    e.dataTransfer.setData("application/json", JSON.stringify(ids))
+    e.dataTransfer.effectAllowed = "move"
+  }
+
+  async function handleDropMedia(ids: string[], folderId: string | null) {
+    if (folderId === activeFolderId) return
+    const res = await moveMediaToFolder(ids, folderId)
+    if (res.success) {
+      setFiles((prev) => prev.filter((f) => !ids.includes(f.id)))
+      setTotalFiles((t) => t - ids.length)
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        ids.forEach((id) => next.delete(id))
+        return next
+      })
+      if (activeFile && ids.includes(activeFile.id)) setActiveFile(null)
       await reloadFolderCounts()
     }
   }
@@ -190,6 +244,7 @@ export default function MediaLibrary({ initialFolders }: Props) {
           onFolderSelect={handleFolderSelect}
           onFoldersChange={setFolders}
           totalCount={totalFiles}
+          onDropMedia={handleDropMedia}
         />
       </div>
 
@@ -229,6 +284,52 @@ export default function MediaLibrary({ initialFolders }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Favorites filter */}
+          <button
+            onClick={handleFavoritesToggle}
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+              favoritesOnly
+                ? "border-amber-300 bg-amber-50 text-amber-600"
+                : "border-[#E4EAF5] bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <Star size={13} fill={favoritesOnly ? "currentColor" : "none"} />
+            Favoriler
+          </button>
+
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value as MediaSortBy)}
+            className="rounded-xl border border-[#E4EAF5] bg-white px-2.5 py-2 text-xs font-medium text-slate-600 outline-none focus:border-[#4F46E5] transition"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+
+          {/* View mode */}
+          <div className="flex rounded-xl border border-[#E4EAF5] overflow-hidden">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`flex items-center justify-center px-2.5 py-2 transition ${
+                viewMode === "grid" ? "bg-[#4F46E5] text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+              }`}
+              title="Izgara görünümü"
+            >
+              <Grid3X3 size={14} />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center justify-center px-2.5 py-2 transition ${
+                viewMode === "list" ? "bg-[#4F46E5] text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+              }`}
+              title="Liste görünümü"
+            >
+              <LayoutList size={14} />
+            </button>
           </div>
 
           {/* Upload button */}
@@ -323,7 +424,7 @@ export default function MediaLibrary({ initialFolders }: Props) {
                 İlk dosyayı yükle
               </button>
             </div>
-          ) : (
+          ) : viewMode === "grid" ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
               {files.map((file) => (
                 <MediaCard
@@ -333,6 +434,23 @@ export default function MediaLibrary({ initialFolders }: Props) {
                   active={activeFile?.id === file.id}
                   onSelect={handleSelect}
                   onOpen={handleOpen}
+                  onToggleFavorite={handleToggleFavorite}
+                  onDragStart={handleCardDragStart}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col divide-y divide-[#F0F4F8] rounded-xl border border-[#E4EAF5] bg-white overflow-hidden">
+              {files.map((file) => (
+                <MediaListRow
+                  key={file.id}
+                  item={file}
+                  selected={selectedIds.has(file.id)}
+                  active={activeFile?.id === file.id}
+                  onSelect={handleSelect}
+                  onOpen={handleOpen}
+                  onToggleFavorite={handleToggleFavorite}
+                  onDragStart={handleCardDragStart}
                 />
               ))}
             </div>

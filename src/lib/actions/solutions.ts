@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
+import { syncMediaUsage } from "@/lib/media-usage"
 import type { ActionResult, PaginatedResult } from "@/types/cms"
 import type { Solution, SolutionFeature } from "@prisma/client"
 
@@ -83,6 +84,9 @@ export async function createSolution(data: SolutionInput): Promise<ActionResult<
         }),
       },
     })
+    await syncMediaUsage("solution", solution.id, solution.title, `/cozumler/${solution.slug}`, {
+      ogImage: solution.ogImage,
+    })
     revalidatePath("/panel/cozumler")
     revalidatePath("/cozumler")
     return { success: true, data: { slug: solution.slug } }
@@ -118,6 +122,9 @@ export async function updateSolution(id: string, data: SolutionInput): Promise<A
         }),
       },
     })
+    await syncMediaUsage("solution", solution.id, solution.title, `/cozumler/${solution.slug}`, {
+      ogImage: solution.ogImage,
+    })
     revalidatePath("/panel/cozumler")
     revalidatePath(`/panel/cozumler/${solution.slug}`)
     revalidatePath("/cozumler")
@@ -133,6 +140,7 @@ export async function deleteSolution(id: string): Promise<ActionResult> {
   if (!session?.user || session.user.role !== "ADMIN") return { success: false, error: "Yetkisiz erişim" }
   try {
     await prisma.solution.delete({ where: { id } })
+    await prisma.mediaUsage.deleteMany({ where: { entityType: "solution", entityId: id } })
     revalidatePath("/panel/cozumler")
     revalidatePath("/cozumler")
     return { success: true }

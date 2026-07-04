@@ -45,7 +45,9 @@
       "PowerShell(Start-Sleep -Seconds 10; try { $r = Invoke-WebRequest \"http://localhost:3000\" -UseBasicParsing -TimeoutSec 5; \"Sunucu hazır: HTTP $\\($r.StatusCode\\)\" } catch { \"Hala hazır değil\" })",
       "PowerShell(Start-Sleep -Seconds 12; try { $r = Invoke-WebRequest \"http://localhost:3000\" -UseBasicParsing -TimeoutSec 8; \"HTTP $\\($r.StatusCode\\)\" } catch { \"Yok: $_\" }; if \\(Test-Path \"C:\\\\Temp\\\\nextdev.log\"\\) { \"Log: $\\(Get-Content 'C:\\\\Temp\\\\nextdev.log' -Tail 5 -ErrorAction SilentlyContinue\\)\" })",
       "PowerShell($candidates = @\\(\"C:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\",\"C:\\\\Program Files \\(x86\\)\\\\Git\\\\cmd\\\\git.exe\",\"C:\\\\Users\\\\yyigi\\\\scoop\\\\shims\\\\git.exe\"\\); $git = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1; if \\($git\\) { \"Bulundu: $git\" } else { \"Git bulunamadı\" })",
-      "PowerShell($env:PATH -split \";\" | Where-Object { $_ -match \"git\" -or \\(Test-Path \"$_\\\\git.exe\" -ErrorAction SilentlyContinue\\) })"
+      "PowerShell($env:PATH -split \";\" | Where-Object { $_ -match \"git\" -or \\(Test-Path \"$_\\\\git.exe\" -ErrorAction SilentlyContinue\\) })",
+      "Bash(git check-ignore *)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

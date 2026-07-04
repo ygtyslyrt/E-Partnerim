@@ -73,27 +73,215 @@ async function main() {
       bgType: "lavender",
       bgColor: "#F3F4FB",
       dotPattern: true,
+      showPartnerixDemo: true,
+      partnerixMessage: "Merhaba! 👋 Ben Partnerix.",
     },
   })
 
   // ─── 4. Diğer Bölümler ────────────────────────────────────────
-  const sections = [
-    { type: "social-proof", order: 1 },
-    { type: "services",     order: 2 },
-    { type: "how-it-works", order: 3 },
-    { type: "why-us",       order: 4 },
-    { type: "blog",         order: 5 },
-    { type: "cta",          order: 6 },
-  ]
+  // Sıra: Hero, Platformlar, Çözümler, Referanslar, Hizmetler, Nasıl Çalışır, Neden Biz, Blog Önizleme, CTA
+  const sectionOrder: Record<string, number> = {
+    hero: 0,
+    platforms: 1,
+    solutions: 2,
+    "social-proof": 3,
+    services: 4,
+    "how-it-works": 5,
+    "why-us": 6,
+    blog: 7,
+    cta: 8,
+  }
 
-  for (const s of sections) {
-    await prisma.pageSectionMeta.upsert({
-      where: { pageId_sectionType: { pageId: homepage.id, sectionType: s.type } },
-      update: {},
-      create: { pageId: homepage.id, sectionType: s.type, order: s.order, visible: true },
+  async function upsertSection(sectionType: string) {
+    return prisma.pageSectionMeta.upsert({
+      where: { pageId_sectionType: { pageId: homepage.id, sectionType } },
+      update: { order: sectionOrder[sectionType] },
+      create: { pageId: homepage.id, sectionType, order: sectionOrder[sectionType], visible: true },
     })
   }
-  console.log("✅ Ana sayfa bölümleri oluşturuldu")
+  await prisma.pageSectionMeta.update({ where: { id: heroMeta.id }, data: { order: sectionOrder.hero } })
+
+  // Platformlar (öne çıkanları gösterir)
+  const platformsMeta = await upsertSection("platforms")
+  await prisma.platformsSectionConfig.upsert({
+    where: { sectionId: platformsMeta.id },
+    update: {},
+    create: {
+      sectionId: platformsMeta.id,
+      title: "Öne Çıkan Platformlar",
+      subtitle: "Türkiye'nin lider e-ticaret altyapıları ve iş ortaklarımız.",
+      showCount: 6,
+    },
+  })
+
+  // Çözümler (öne çıkanları gösterir)
+  const solutionsMeta = await upsertSection("solutions")
+  await prisma.solutionsSectionConfig.upsert({
+    where: { sectionId: solutionsMeta.id },
+    update: {},
+    create: {
+      sectionId: solutionsMeta.id,
+      title: "Öne Çıkan Çözümler",
+      subtitle: "İhtiyacınıza en uygun danışmanlık ve hizmet çözümlerimiz.",
+      showCount: 4,
+    },
+  })
+
+  // Referanslar (SocialProof)
+  const socialProofMeta = await upsertSection("social-proof")
+  const socialProof = await prisma.socialProofSectionContent.upsert({
+    where: { sectionId: socialProofMeta.id },
+    update: {},
+    create: {
+      sectionId: socialProofMeta.id,
+      title: "Güçlü Ortaklıkların Desteğiyle",
+      subtitle: "Türkiye'nin önde gelen e-ticaret, ödeme ve pazarlama platformları ile entegre çalışıyoruz",
+    },
+  })
+  const existingLogos = await prisma.socialProofLogo.count({ where: { sectionId: socialProof.id } })
+  if (existingLogos === 0) {
+    await prisma.socialProofLogo.createMany({
+      data: [
+        { name: "T-Soft", color: "#E5510F", order: 0 },
+        { name: "İdeasoft", color: "#3AAA35", order: 1 },
+        { name: "İkas", color: "#0F172A", order: 2 },
+        { name: "Ticimax", color: "#F7941D", order: 3 },
+        { name: "Meta", color: "#0082FB", order: 4 },
+        { name: "Google Ads", color: "#4285F4", order: 5 },
+        { name: "Paytr", color: "#1A355E", order: 6 },
+        { name: "Entegra", color: "#0096D6", order: 7 },
+        { name: "Logo Yazılım", color: "#E31E25", order: 8 },
+        { name: "Uyumsoft", color: "#E5851D", order: 9 },
+        { name: "Kobikom", color: "#003D7C", order: 10 },
+        { name: "Sentoz", color: "#2563EB", order: 11 },
+      ].map((l) => ({ ...l, sectionId: socialProof.id })),
+    })
+  }
+  const existingStats = await prisma.socialProofStat.count({ where: { sectionId: socialProof.id } })
+  if (existingStats === 0) {
+    await prisma.socialProofStat.createMany({
+      data: [
+        { value: "10+", label: "Yıllık Deneyim", order: 0, sectionId: socialProof.id },
+        { value: "%95", label: "Müşteri Başarı Oranı", order: 1, sectionId: socialProof.id },
+        { value: "4", label: "Temel Hizmet Kategorisi", order: 2, sectionId: socialProof.id },
+      ],
+    })
+  }
+
+  // Hizmetler (Services)
+  const servicesMeta = await upsertSection("services")
+  const services = await prisma.servicesSectionContent.upsert({
+    where: { sectionId: servicesMeta.id },
+    update: {},
+    create: {
+      sectionId: servicesMeta.id,
+      title: "E-Ticaretinizin Her Adımında Yanınızdayız",
+      subtitle: "Danışmanlıktan kuruluma, pazarlamadan marka tesciline — tek çatı altında.",
+      ctaLabel: "Tüm hizmetlerimiz hakkında bilgi alın",
+      ctaUrl: "https://wa.me/905451416118",
+    },
+  })
+  const existingServiceItems = await prisma.serviceItem.count({ where: { servicesId: services.id } })
+  if (existingServiceItems === 0) {
+    await prisma.serviceItem.createMany({
+      data: [
+        {
+          title: "Ne yapmanız gerektiğini net bir şekilde görün", description: "İhtiyacınızı analiz ediyor, size en uygun çözümü ücretsiz belirliyoruz. Bağlayıcı sözleşme yok.",
+          icon: "MessageCircle", color: "#00D084", highlighted: true, statValue: "%85", statLabel: "2 haftada net yön belirleme", order: 0, servicesId: services.id,
+        },
+        {
+          title: "Kurulum & Teknik Destek", description: "Teknik bilgi gerektirmeden sisteminizi kurun. Yayına hazır olana kadar her adımda yanınızdayız.",
+          icon: "Cpu", color: "#00D084", statValue: "%90", statLabel: "30 gün içinde teknik aksaksız", order: 1, servicesId: services.id,
+        },
+        {
+          title: "Marka Tescil", description: "Markanızı koruyun, rakiplerden önce tescil ettirin. Marka haklarınız güvende.",
+          icon: "ShieldCheck", color: "#00D084", statValue: "%75", statLabel: "tescil sonrası güven artışı", order: 2, servicesId: services.id,
+        },
+        {
+          title: "Dijital Pazarlama", description: "Verilerinizi anlamlı sonuçlara dönüştürüyoruz. Veri odaklı kampanyalar ve analizlerle satış stratejinizi güçlendiriyoruz.",
+          icon: "BarChart2", color: "#00D084", statValue: "%88", statLabel: "ölçülebilir satış artışı", order: 3, servicesId: services.id,
+        },
+      ],
+    })
+  }
+
+  // Nasıl Çalışır (HowItWorks)
+  const howItWorksMeta = await upsertSection("how-it-works")
+  const howItWorks = await prisma.howItWorksSectionContent.upsert({
+    where: { sectionId: howItWorksMeta.id },
+    update: {},
+    create: {
+      sectionId: howItWorksMeta.id,
+      title: "3 Adımda Doğru Çözüme",
+      subtitle: "Sizi satmaya değil, doğru kararı vermeye yönlendiriyoruz. Ücretsiz, tarafsız, sonuç odaklı.",
+    },
+  })
+  const existingSteps = await prisma.howItWorksStep.count({ where: { sectionId: howItWorks.id } })
+  if (existingSteps === 0) {
+    await prisma.howItWorksStep.createMany({
+      data: [
+        { stepNo: 1, title: "Anlat", description: "İşletmenizin mevcut durumunu, hedeflerinizi ve dijital ihtiyaçlarınızı bizimle paylaşın. Hiçbir teknik bilgiye gerek yok.", icon: "MessageSquare", order: 0, sectionId: howItWorks.id },
+        { stepNo: 2, title: "Analiz Et", description: "İhtiyaçlarınızı birlikte değerlendiriyoruz. Hangi çözümün, hangi altyapının, hangi partnerin size uygun olduğunu belirliyoruz.", icon: "ScanSearch", order: 1, sectionId: howItWorks.id },
+        { stepNo: 3, title: "Yönlendir", description: "Size en uygun partner firmayı veya platformu tarafsız biçimde öneriyor, sizi doğrudan bağlantıya geçiriyoruz. Ücretsiz.", icon: "Handshake", highlighted: true, order: 2, sectionId: howItWorks.id },
+      ],
+    })
+  }
+
+  // Neden Biz (WhyUs)
+  const whyUsMeta = await upsertSection("why-us")
+  const whyUs = await prisma.whyUsSectionContent.upsert({
+    where: { sectionId: whyUsMeta.id },
+    update: {},
+    create: {
+      sectionId: whyUsMeta.id,
+      title: "Satmıyoruz. En Doğru Çözümü Birlikte Buluyoruz.",
+      description: "Tarafsız danışmanlık anlayışımızla önce ihtiyacınızı anlarız, sonra size en uygun platformu veya partneri ücretsiz olarak yönlendiririz.",
+      stat1Value: "%95", stat1Label: "Müşteri Başarı Oranı",
+      stat2Value: "10+", stat2Label: "Yıllık Deneyim",
+      ctaLabel: "Ücretsiz Danışmanlık Al",
+    },
+  })
+  const existingFeatures = await prisma.whyUsFeature.count({ where: { sectionId: whyUs.id } })
+  if (existingFeatures === 0) {
+    await prisma.whyUsFeature.createMany({
+      data: [
+        { title: "Güçlü Partner Ağı", description: "T-Soft, İkas, Meta ve Google gibi lider platformlarla ortaklığımız sayesinde en uygun bağlantıyı kuruyoruz.", icon: "Link2", order: 0, sectionId: whyUs.id },
+        { title: "Tarafsız Rehberlik", description: "Size hiçbir şey satmıyoruz. Hangi çözümün doğru olduğunu tarafsız biçimde değerlendiriyoruz.", icon: "Award", order: 1, sectionId: whyUs.id },
+        { title: "Mevcut Yapıya Uyum", description: "Sıfırdan başlamak zorunda değilsiniz. Mevcut altyapınıza en uygun çözümü birlikte buluyoruz.", icon: "Layers", order: 2, sectionId: whyUs.id },
+        { title: "Veriye Dayalı Yönlendirme", description: "Sektör verilerine dayanan rehberlik ile tahmin değil, gerçek içgörüyle karar veriyorsunuz.", icon: "BarChart2", order: 3, sectionId: whyUs.id },
+        { title: "Güvenilir Süreç", description: "10+ yıllık deneyim ve onlarca işletmeyle oluşturduğumuz kanıtlanmış yönlendirme süreci.", icon: "ShieldCheck", order: 4, sectionId: whyUs.id },
+        { title: "Anında Erişim", description: "WhatsApp, telefon veya e-posta — sorularınızı hemen yanıtlıyor, sizi doğru yere bağlıyoruz.", icon: "MessageCircle", order: 5, sectionId: whyUs.id },
+      ],
+    })
+  }
+
+  // Blog Önizleme
+  const blogMeta = await upsertSection("blog")
+  await prisma.blogSectionConfig.upsert({
+    where: { sectionId: blogMeta.id },
+    update: {},
+    create: { sectionId: blogMeta.id, title: "Sektörden Haberler ve İpuçları", subtitle: null, showCount: 4 },
+  })
+
+  // CTA
+  const ctaMeta = await upsertSection("cta")
+  await prisma.ctaSectionContent.upsert({
+    where: { sectionId: ctaMeta.id },
+    update: {},
+    create: {
+      sectionId: ctaMeta.id,
+      eyebrow: "Ücretsiz · Tarafsız · Bağlayıcı Değil",
+      title: "Dijital Yol Haritanızı Birlikte Oluşturalım.",
+      subtitle: "Hangi altyapıyı seçmeli, hangi adımdan başlamalısınız? Bunu birlikte buluyoruz — ücretsiz, tarafsız, sonuç odaklı.",
+      buttons: [
+        { label: "Ücretsiz Danışmanlık Al", type: "whatsapp" },
+        { label: "info@e-partnerim.com", type: "mail" },
+      ],
+      style: "default",
+    },
+  })
+
+  console.log("✅ Ana sayfa bölümleri ve içerikleri oluşturuldu")
 
   // ─── 5. Partnerix Flow ────────────────────────────────────────
   const existingFlow = await prisma.partnerixFlow.findUnique({ where: { slug: "default" } })

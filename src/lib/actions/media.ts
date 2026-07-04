@@ -21,7 +21,18 @@ export type MediaItem = {
   alt: string | null
   title: string | null
   description: string | null
+  isFavorite: boolean
   folderId: string | null
+  createdAt: string
+}
+
+export type MediaUsageItem = {
+  id: string
+  entityType: string
+  entityId: string
+  entityLabel: string
+  entityHref: string
+  fieldName: string
   createdAt: string
 }
 
@@ -38,7 +49,7 @@ function toMediaItem(m: {
   webpUrl: string | null; thumbnailUrl: string | null; mimeType: string
   size: number; width: number | null; height: number | null
   alt: string | null; title: string | null; description: string | null
-  folderId: string | null; createdAt: Date
+  isFavorite: boolean; folderId: string | null; createdAt: Date
 }): MediaItem {
   return { ...m, createdAt: m.createdAt.toISOString() }
 }
@@ -60,18 +71,33 @@ function extractStoragePath(url: string): string {
 
 // ── Queries ───────────────────────────────────────────────────────────────
 
+export type MediaSortBy = "date_desc" | "date_asc" | "name_asc" | "name_desc" | "size_desc" | "size_asc"
+
+const MEDIA_ORDER_BY: Record<MediaSortBy, Prisma.MediaOrderByWithRelationInput> = {
+  date_desc: { createdAt: "desc" },
+  date_asc: { createdAt: "asc" },
+  name_asc: { originalName: "asc" },
+  name_desc: { originalName: "desc" },
+  size_desc: { size: "desc" },
+  size_asc: { size: "asc" },
+}
+
 export async function getMedia({
   folderId,
   search = "",
   mimePrefix = "",
   page = 1,
   pageSize = 48,
+  sortBy = "date_desc",
+  favoritesOnly = false,
 }: {
   folderId?: string | null
   search?: string
   mimePrefix?: string
   page?: number
   pageSize?: number
+  sortBy?: MediaSortBy
+  favoritesOnly?: boolean
 } = {}) {
   const where: Prisma.MediaWhereInput = {}
   if (folderId !== undefined) where.folderId = folderId ?? null
@@ -81,9 +107,15 @@ export async function getMedia({
     { alt: { contains: search, mode: "insensitive" } },
   ]
   if (mimePrefix) where.mimeType = { startsWith: mimePrefix }
+  if (favoritesOnly) where.isFavorite = true
 
   const [raw, total] = await Promise.all([
-    prisma.media.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.media.findMany({
+      where,
+      orderBy: MEDIA_ORDER_BY[sortBy] ?? MEDIA_ORDER_BY.date_desc,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
     prisma.media.count({ where }),
   ])
   return { data: raw.map(toMediaItem), total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
@@ -148,19 +180,46 @@ export async function deleteFolder(id: string): Promise<ActionResult> {
   }
 }
 
-export async function updateMedia(id: string, data: { alt?: string | null; title?: string | null; description?: string | null }): Promise<ActionResult<MediaItem>> {
+export async function updateMedia(
+  id: string,
+  data: { alt?: string | null; title?: string | null; description?: string | null; originalName?: string; isFavorite?: boolean }
+): Promise<ActionResult<MediaItem>> {
   const session = await auth()
   if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
   try {
-    const media = await prisma.media.update({
-      where: { id },
-      data: { alt: data.alt?.trim() || null, title: data.title?.trim() || null, description: data.description?.trim() || null },
-    })
+    const updateData: Prisma.MediaUpdateInput = {
+      alt: data.alt?.trim() || null,
+      title: data.title?.trim() || null,
+      description: data.description?.trim() || null,
+    }
+    if (data.originalName?.trim()) updateData.originalName = data.originalName.trim()
+    if (data.isFavorite !== undefined) updateData.isFavorite = data.isFavorite
+
+    const media = await prisma.media.update({ where: { id }, data: updateData })
     revalidatePath("/panel/medya")
     return { success: true, data: toMediaItem(media) }
   } catch (e: unknown) {
     return { success: false, error: (e as Error).message }
   }
+}
+
+export async function toggleMediaFavorite(id: string): Promise<ActionResult<MediaItem>> {
+  const session = await auth()
+  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  try {
+    const current = await prisma.media.findUnique({ where: { id }, select: { isFavorite: true } })
+    if (!current) return { success: false, error: "Dosya bulunamadı" }
+    const media = await prisma.media.update({ where: { id }, data: { isFavorite: !current.isFavorite } })
+    revalidatePath("/panel/medya")
+    return { success: true, data: toMediaItem(media) }
+  } catch (e: unknown) {
+    return { success: false, error: (e as Error).message }
+  }
+}
+
+export async function getMediaUsage(mediaId: string): Promise<MediaUsageItem[]> {
+  const rows = await prisma.mediaUsage.findMany({ where: { mediaId }, orderBy: { entityLabel: "asc" } })
+  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }))
 }
 
 export async function moveMediaToFolder(ids: string[], folderId: string | null): Promise<ActionResult> {

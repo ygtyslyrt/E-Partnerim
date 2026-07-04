@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
+import { syncMediaUsage } from "@/lib/media-usage"
 import type { ActionResult } from "@/types/cms"
 
 export async function getHeroContent() {
@@ -25,7 +26,10 @@ export async function updateHeroContent(
     title2: string
     gradient?: string
     subtitle?: string
+    bgImage?: string
     dotPattern: boolean
+    showPartnerixDemo?: boolean
+    partnerixMessage?: string
   }
 ): Promise<ActionResult> {
   const session = await auth()
@@ -47,6 +51,8 @@ export async function updateHeroContent(
       where: { sectionId },
       data,
     })
+
+    await syncMediaUsage("hero", sectionId, "Hero Bölümü (Ana Sayfa)", "/", { bgImage: data.bgImage })
 
     revalidatePath("/")
     revalidatePath("/panel/icerik")

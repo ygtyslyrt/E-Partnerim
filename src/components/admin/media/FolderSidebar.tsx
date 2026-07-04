@@ -11,15 +11,32 @@ interface Props {
   onFolderSelect: (id: string | null) => void
   onFoldersChange: (folders: FolderItem[]) => void
   totalCount: number
+  onDropMedia: (ids: string[], folderId: string | null) => void
 }
 
-export default function FolderSidebar({ folders, activeFolderId, onFolderSelect, onFoldersChange, totalCount }: Props) {
+export default function FolderSidebar({ folders, activeFolderId, onFolderSelect, onFoldersChange, totalCount, onDropMedia }: Props) {
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState("")
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+
+  function handleDropOn(folderId: string | null) {
+    return (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragOverId(null)
+      const raw = e.dataTransfer.getData("application/json")
+      if (!raw) return
+      try {
+        const ids = JSON.parse(raw) as string[]
+        if (Array.isArray(ids) && ids.length) onDropMedia(ids, folderId)
+      } catch {
+        // ignore invalid payload
+      }
+    }
+  }
 
   async function handleCreate() {
     if (!newName.trim()) return
@@ -70,8 +87,13 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
       {/* Tüm Medya */}
       <button
         onClick={() => onFolderSelect(null)}
+        onDragOver={(e) => { e.preventDefault(); setDragOverId("__root__") }}
+        onDragLeave={() => setDragOverId((id) => (id === "__root__" ? null : id))}
+        onDrop={handleDropOn(null)}
         className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition w-full text-left ${
-          activeFolderId === null ? "bg-[#EEF2FF] text-[#4F46E5] font-semibold" : "text-slate-600 hover:bg-slate-50"
+          dragOverId === "__root__"
+            ? "bg-[#EEF2FF] text-[#4F46E5] ring-2 ring-inset ring-[#4F46E5]/40"
+            : activeFolderId === null ? "bg-[#EEF2FF] text-[#4F46E5] font-semibold" : "text-slate-600 hover:bg-slate-50"
         }`}
       >
         <ImageIcon size={15} className="shrink-0" />
@@ -105,8 +127,13 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
             ) : (
               <button
                 onClick={() => onFolderSelect(folder.id)}
+                onDragOver={(e) => { e.preventDefault(); setDragOverId(folder.id) }}
+                onDragLeave={() => setDragOverId((id) => (id === folder.id ? null : id))}
+                onDrop={handleDropOn(folder.id)}
                 className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition w-full text-left ${
-                  activeFolderId === folder.id ? "bg-[#EEF2FF] text-[#4F46E5] font-semibold" : "text-slate-600 hover:bg-slate-50"
+                  dragOverId === folder.id
+                    ? "bg-[#EEF2FF] text-[#4F46E5] ring-2 ring-inset ring-[#4F46E5]/40"
+                    : activeFolderId === folder.id ? "bg-[#EEF2FF] text-[#4F46E5] font-semibold" : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 {activeFolderId === folder.id ? <FolderOpen size={15} className="shrink-0" /> : <Folder size={15} className="shrink-0" />}

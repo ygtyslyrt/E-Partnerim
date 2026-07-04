@@ -3,20 +3,18 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock } from "lucide-react";
-import { blogPosts as posts } from "@/data/blog-posts";
+import { categoryStyle } from "@/lib/category-color";
+import type { BlogPost, BlogCategory, BlogSectionConfig } from "@prisma/client";
 
-const featured = posts.find((p) => p.featured)!;
-const secondary = posts.filter((p) => !p.featured);
+type PostWithCategory = BlogPost & { category: BlogCategory | null };
 
-function CategoryBadge({
-  label,
-  color,
-  bg,
-}: {
-  label: string;
-  color: string;
-  bg: string;
-}) {
+interface Props {
+  config: BlogSectionConfig;
+  posts: PostWithCategory[];
+}
+
+function CategoryBadge({ label }: { label: string }) {
+  const { color, bg } = categoryStyle(label);
   return (
     <span
       className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold"
@@ -27,7 +25,16 @@ function CategoryBadge({
   );
 }
 
-export default function Blog() {
+function formatDate(d: Date | null) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+export default function Blog({ config, posts }: Props) {
+  if (posts.length === 0) return null;
+
+  const [featured, ...secondary] = posts;
+
   return (
     <section className="bg-white py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -44,10 +51,11 @@ export default function Blog() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00D084]">
               Blog
             </p>
-            <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-[#0F172A] sm:text-5xl">
-              Sektörden Haberler
-              <br className="hidden sm:block" /> ve İpuçları
-            </h2>
+            {config.title && (
+              <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-[#0F172A] sm:text-5xl">
+                {config.title}
+              </h2>
+            )}
           </div>
           <Link
             href="/blog"
@@ -71,43 +79,37 @@ export default function Blog() {
           >
             <Link href={`/blog/${featured.slug}`} className="group block h-full">
               <div className="flex h-full flex-col rounded-2xl border border-[#E8EEF0] bg-[#FAFCFC] p-8 transition-all duration-300 hover:-translate-y-1 hover:border-[#00D084]/25 hover:shadow-md">
-                {/* Dekoratif gradient alan */}
-                <div
-                  className="mb-6 h-40 w-full rounded-xl"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(0,208,132,0.08) 0%, rgba(24,175,193,0.08) 100%)",
-                  }}
-                >
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <div className="mx-auto mb-2 h-10 w-10 rounded-xl bg-[#00D084]/15 flex items-center justify-center">
-                        <BarChartIcon />
-                      </div>
-                      <span className="text-xs font-medium text-[#94A3B8]">Dijital Pazarlama</span>
-                    </div>
-                  </div>
-                </div>
+                {featured.coverImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={featured.coverImage} alt={featured.title} className="mb-6 h-40 w-full rounded-xl object-cover" />
+                ) : (
+                  <div
+                    className="mb-6 h-40 w-full rounded-xl"
+                    style={{ background: "linear-gradient(135deg, rgba(0,208,132,0.08) 0%, rgba(24,175,193,0.08) 100%)" }}
+                  />
+                )}
 
-                <CategoryBadge
-                  label={featured.category}
-                  color={featured.categoryColor}
-                  bg={featured.categoryBg}
-                />
+                {featured.category && <CategoryBadge label={featured.category.name} />}
                 <h3 className="mt-3 text-xl font-bold leading-snug text-[#0F172A] group-hover:text-[#00D084] transition-colors">
                   {featured.title}
                 </h3>
-                <p className="mt-3 flex-1 text-sm leading-relaxed text-[#64748B]">
-                  {featured.excerpt}
-                </p>
+                {featured.excerpt && (
+                  <p className="mt-3 flex-1 text-sm leading-relaxed text-[#64748B]">
+                    {featured.excerpt}
+                  </p>
+                )}
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3 text-xs text-[#94A3B8]">
-                    <span>{featured.date}</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {featured.readTime} okuma
-                    </span>
+                    <span>{formatDate(featured.publishedAt)}</span>
+                    {featured.readTime && (
+                      <>
+                        <span>·</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {featured.readTime} dk okuma
+                        </span>
+                      </>
+                    )}
                   </div>
                   <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#00D084]">
                     Okumaya Devam Et
@@ -118,7 +120,7 @@ export default function Blog() {
             </Link>
           </motion.div>
 
-          {/* ── Yan 3 Makale ─────────────────────────── */}
+          {/* ── Yan Makaleler ─────────────────────────── */}
           <div className="flex flex-col gap-4">
             {secondary.map((post, i) => (
               <motion.div
@@ -130,21 +132,21 @@ export default function Blog() {
               >
                 <Link href={`/blog/${post.slug}`} className="group block">
                   <div className="flex flex-col rounded-2xl border border-[#E8EEF0] bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#00D084]/25 hover:shadow-sm">
-                    <CategoryBadge
-                      label={post.category}
-                      color={post.categoryColor}
-                      bg={post.categoryBg}
-                    />
+                    {post.category && <CategoryBadge label={post.category.name} />}
                     <h3 className="mt-2.5 text-sm font-bold leading-snug text-[#0F172A] group-hover:text-[#00D084] transition-colors line-clamp-2">
                       {post.title}
                     </h3>
                     <div className="mt-3 flex items-center gap-2 text-xs text-[#94A3B8]">
-                      <span>{post.date}</span>
-                      <span>·</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {post.readTime}
-                      </span>
+                      <span>{formatDate(post.publishedAt)}</span>
+                      {post.readTime && (
+                        <>
+                          <span>·</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {post.readTime} dk
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </Link>
@@ -166,15 +168,5 @@ export default function Blog() {
 
       </div>
     </section>
-  );
-}
-
-function BarChartIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5 text-[#00D084]">
-      <rect x="2" y="10" width="3" height="8" rx="1" fill="currentColor" opacity="0.4" />
-      <rect x="7" y="6" width="3" height="12" rx="1" fill="currentColor" opacity="0.7" />
-      <rect x="12" y="2" width="3" height="16" rx="1" fill="currentColor" />
-    </svg>
   );
 }

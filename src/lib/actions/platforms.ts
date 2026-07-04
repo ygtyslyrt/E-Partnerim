@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
+import { syncMediaUsage } from "@/lib/media-usage"
 import type { ActionResult, PaginatedResult } from "@/types/cms"
 import type { Platform, PlatformFeature } from "@prisma/client"
 
@@ -80,6 +81,9 @@ export async function createPlatform(data: PlatformInput): Promise<ActionResult<
         }),
       },
     })
+    await syncMediaUsage("platform", platform.id, platform.name, `/platformlar/${platform.slug}`, {
+      logo: platform.logo, ogImage: platform.ogImage,
+    })
     revalidatePath("/panel/platformlar")
     revalidatePath("/platformlar")
     return { success: true, data: { slug: platform.slug } }
@@ -118,6 +122,9 @@ export async function updatePlatform(id: string, data: PlatformInput): Promise<A
         }),
       },
     })
+    await syncMediaUsage("platform", platform.id, platform.name, `/platformlar/${platform.slug}`, {
+      logo: platform.logo, ogImage: platform.ogImage,
+    })
     revalidatePath("/panel/platformlar")
     revalidatePath(`/panel/platformlar/${platform.slug}`)
     revalidatePath("/platformlar")
@@ -133,6 +140,7 @@ export async function deletePlatform(id: string): Promise<ActionResult> {
   if (!session?.user || session.user.role !== "ADMIN") return { success: false, error: "Yetkisiz erişim" }
   try {
     await prisma.platform.delete({ where: { id } })
+    await prisma.mediaUsage.deleteMany({ where: { entityType: "platform", entityId: id } })
     revalidatePath("/panel/platformlar")
     revalidatePath("/platformlar")
     return { success: true }

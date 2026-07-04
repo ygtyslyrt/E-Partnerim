@@ -1,9 +1,42 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, Mail, Phone } from "lucide-react";
 
-const WHATSAPP_URL = "https://wa.me/905451416118";
+interface CtaButton {
+  label: string;
+  type: "whatsapp" | "mail" | "phone";
+}
+
+type CtaContent = {
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  buttons: unknown;
+};
+
+interface Props {
+  content?: CtaContent;
+  settings?: Record<string, string>;
+}
+
+// Bağımsız sayfalarda (hakkımızda, platformlar, çözümler, blog detay) prop'suz
+// kullanılıyor — ana sayfadaki DB içeriği olmadığında bu varsayılanlar gösterilir.
+const DEFAULT_CONTENT: CtaContent = {
+  eyebrow: "Ücretsiz · Tarafsız · Bağlayıcı Değil",
+  title: "Dijital Yol Haritanızı Birlikte Oluşturalım.",
+  subtitle: "Hangi altyapıyı seçmeli, hangi adımdan başlamalısınız? Bunu birlikte buluyoruz — ücretsiz, tarafsız, sonuç odaklı.",
+  buttons: [
+    { label: "Ücretsiz Danışmanlık Al", type: "whatsapp" },
+    { label: "info@e-partnerim.com", type: "mail" },
+  ],
+};
+
+const DEFAULT_SETTINGS: Record<string, string> = {
+  whatsapp: "905451416118",
+  email: "info@e-partnerim.com",
+  phone: "+90 545 141 61 18",
+};
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -13,7 +46,21 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-export default function CTASection() {
+function buttonHref(type: CtaButton["type"], settings: Record<string, string>): string {
+  if (type === "whatsapp") return `https://wa.me/${settings.whatsapp ?? ""}`
+  if (type === "mail") return `mailto:${settings.email ?? ""}`
+  return `tel:${(settings.phone ?? "").replace(/\s+/g, "")}`
+}
+
+function ButtonIcon({ type }: { type: CtaButton["type"] }) {
+  if (type === "whatsapp") return <WhatsAppIcon className="h-5 w-5" />
+  if (type === "mail") return <Mail className="h-4 w-4" />
+  return <Phone className="h-4 w-4" />
+}
+
+export default function CTASection({ content = DEFAULT_CONTENT, settings = DEFAULT_SETTINGS }: Props) {
+  const buttons = (Array.isArray(content.buttons) ? content.buttons : []) as unknown as CtaButton[];
+
   return (
     <section className="relative overflow-hidden bg-[#0F172A] py-24">
       {/* Arka plan dekor */}
@@ -34,58 +81,59 @@ export default function CTASection() {
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           {/* Üst etiket */}
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#00D084]/30 bg-[#00D084]/10 px-4 py-1.5 text-sm font-semibold text-[#00D084]">
-            Ücretsiz · Tarafsız · Bağlayıcı Değil
-          </span>
+          {content.eyebrow && (
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#00D084]/30 bg-[#00D084]/10 px-4 py-1.5 text-sm font-semibold text-[#00D084]">
+              {content.eyebrow}
+            </span>
+          )}
 
           {/* Başlık */}
           <h2 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[56px] leading-[1.1]">
-            Dijital Yol Haritanızı
-            <br />
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(90deg, #00D084 0%, #18AFC1 100%)" }}
-            >
-              Birlikte Oluşturalım.
-            </span>
+            {content.title}
           </h2>
 
           {/* Alt metin */}
-          <p className="mt-6 text-lg text-white/60 max-w-xl mx-auto leading-relaxed">
-            Hangi altyapıyı seçmeli, hangi adımdan başlamalısınız? Bunu birlikte buluyoruz — ücretsiz, tarafsız, sonuç odaklı.
-          </p>
+          {content.subtitle && (
+            <p className="mt-6 text-lg text-white/60 max-w-xl mx-auto leading-relaxed">
+              {content.subtitle}
+            </p>
+          )}
 
           {/* CTA Butonları */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-14 items-center gap-3 rounded-xl bg-[#00D084] px-8 text-[15px] font-semibold text-white shadow-[0_4px_24px_rgba(0,208,132,0.4)] transition-all hover:bg-[#00bb76] hover:shadow-[0_4px_32px_rgba(0,208,132,0.5)] active:scale-[0.98]"
-            >
-              <WhatsAppIcon className="h-5 w-5" />
-              Ücretsiz Danışmanlık Al
-              <ArrowRight className="h-4 w-4" />
-            </a>
-            <a
-              href="mailto:info@e-partnerim.com"
-              className="inline-flex h-14 items-center gap-2 rounded-xl bg-white px-8 text-[15px] font-semibold text-[#0F172A] shadow-[0_4px_20px_rgba(255,255,255,0.12)] transition-all hover:bg-white/90 active:scale-[0.98]"
-            >
-              <Mail className="h-4 w-4" />
-              info@e-partnerim.com
-            </a>
-          </div>
+          {buttons.length > 0 && (
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              {buttons.map((btn, i) => (
+                <a
+                  key={i}
+                  href={buttonHref(btn.type, settings)}
+                  target={btn.type === "whatsapp" ? "_blank" : undefined}
+                  rel={btn.type === "whatsapp" ? "noopener noreferrer" : undefined}
+                  className={
+                    i === 0
+                      ? "inline-flex h-14 items-center gap-3 rounded-xl bg-[#00D084] px-8 text-[15px] font-semibold text-white shadow-[0_4px_24px_rgba(0,208,132,0.4)] transition-all hover:bg-[#00bb76] hover:shadow-[0_4px_32px_rgba(0,208,132,0.5)] active:scale-[0.98]"
+                      : "inline-flex h-14 items-center gap-2 rounded-xl bg-white px-8 text-[15px] font-semibold text-[#0F172A] shadow-[0_4px_20px_rgba(255,255,255,0.12)] transition-all hover:bg-white/90 active:scale-[0.98]"
+                  }
+                >
+                  <ButtonIcon type={btn.type} />
+                  {btn.label}
+                  {i === 0 && <ArrowRight className="h-4 w-4" />}
+                </a>
+              ))}
+            </div>
+          )}
 
           {/* Telefon */}
-          <p className="mt-6 text-sm text-white/40">
-            veya arayın:{" "}
-            <a
-              href="tel:+905451416118"
-              className="font-semibold text-white/60 hover:text-white transition-colors"
-            >
-              +90 545 141 61 18
-            </a>
-          </p>
+          {settings.phone && (
+            <p className="mt-6 text-sm text-white/40">
+              veya arayın:{" "}
+              <a
+                href={`tel:${settings.phone.replace(/\s+/g, "")}`}
+                className="font-semibold text-white/60 hover:text-white transition-colors"
+              >
+                {settings.phone}
+              </a>
+            </p>
+          )}
         </motion.div>
       </div>
     </section>

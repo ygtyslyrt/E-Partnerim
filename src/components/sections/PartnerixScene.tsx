@@ -100,10 +100,11 @@ const slide: Variants = {
    Konuşma Balonları
    Kart yok. Messenger yok. Sadece yüzen pill'ler.
 ──────────────────────────────────────────────────────────────── */
-function SpeechBubbles() {
+function SpeechBubbles({ welcomeMessage }: { welcomeMessage?: string }) {
+  const bubbles = welcomeMessage ? [welcomeMessage, ...BUBBLES.slice(1)] : BUBBLES
   return (
     <div className="flex flex-col gap-1.5">
-      {BUBBLES.map((text, i) => (
+      {bubbles.map((text, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 8, x: -6 }}
@@ -379,7 +380,7 @@ function WizardCard({
    │  sol, bağımsız  sağ, flex-1                │
    └─────────────────────────────────────────────┘
 ──────────────────────────────────────────────────────────────── */
-export default function PartnerixScene() {
+export default function PartnerixScene({ welcomeMessage }: { welcomeMessage?: string }) {
   const [step,    setStep]    = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [done,    setDone]    = useState(false);
@@ -399,7 +400,7 @@ export default function PartnerixScene() {
       className="flex w-full max-w-[680px] flex-col gap-3"
     >
       {/* 1. Konuşma balonları — robotun üstünde, kart/container yok */}
-      <SpeechBubbles />
+      <SpeechBubbles welcomeMessage={welcomeMessage} />
 
       {/* 2. Robot (sol) + Wizard kart (sağ) — aynı sahne, items-end */}
       <div className="flex items-end gap-5">

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { updateHeroContent } from "@/lib/actions/hero"
+import MediaPickerButton from "@/components/admin/media/MediaPickerButton"
 import { Loader2, Save, CheckCircle } from "lucide-react"
 import type { HeroSectionContent } from "@prisma/client"
 
@@ -19,7 +20,10 @@ export default function HeroEditor({ initialData }: Props) {
     title1: initialData?.title1 ?? "",
     title2: initialData?.title2 ?? "",
     subtitle: initialData?.subtitle ?? "",
+    bgImage: initialData?.bgImage ?? "",
     dotPattern: initialData?.dotPattern ?? true,
+    showPartnerixDemo: initialData?.showPartnerixDemo ?? true,
+    partnerixMessage: initialData?.partnerixMessage ?? "",
   })
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -41,7 +45,10 @@ export default function HeroEditor({ initialData }: Props) {
         title1: form.title1,
         title2: form.title2,
         subtitle: form.subtitle || undefined,
+        bgImage: form.bgImage || undefined,
         dotPattern: form.dotPattern,
+        showPartnerixDemo: form.showPartnerixDemo,
+        partnerixMessage: form.partnerixMessage || undefined,
       })
 
       if (result.success) {
@@ -113,6 +120,13 @@ export default function HeroEditor({ initialData }: Props) {
         />
       </div>
 
+      <MediaPickerButton
+        value={form.bgImage}
+        onChange={(url) => setForm((prev) => ({ ...prev, bgImage: url }))}
+        label="Arkaplan Görseli"
+        hint="Boş bırakılırsa varsayılan arkaplan rengi kullanılır"
+      />
+
       <div className="flex items-center gap-3">
         <input
           type="checkbox"
@@ -125,6 +139,34 @@ export default function HeroEditor({ initialData }: Props) {
         <label htmlFor="dotPattern" className="text-sm text-slate-700">
           Nokta desen arka planı göster
         </label>
+      </div>
+
+      <div className="rounded-xl border border-[#E4EAF5] bg-[#F8FAFC] p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="showPartnerixDemo"
+            name="showPartnerixDemo"
+            checked={form.showPartnerixDemo}
+            onChange={handleChange}
+            className="h-4 w-4 rounded border-slate-300 text-[#3730A3]"
+          />
+          <label htmlFor="showPartnerixDemo" className="text-sm font-medium text-slate-700">
+            Partnerix demosunu göster
+          </label>
+        </div>
+        {form.showPartnerixDemo && (
+          <div>
+            <label className={labelCls}>Partnerix karşılama mesajı</label>
+            <input
+              name="partnerixMessage"
+              value={form.partnerixMessage}
+              onChange={handleChange}
+              placeholder="Merhaba! 👋 Ben Partnerix."
+              className={inputCls}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3 pt-2">

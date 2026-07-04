@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import PartnerixScene from "./PartnerixScene";
+import type { HeroSectionContent } from "@prisma/client";
 
 /* ── Animasyon varyantları ─────────────────────────── */
 const container: Variants = {
@@ -14,20 +15,40 @@ const fadeUp: Variants = {
   hidden: { opacity: 0, y: 18 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
+
+const TRUST_SIGNALS = ["Ücretsiz danışmanlık", "Tarafsız öneriler", "Bağlayıcı sözleşme yok", "Uzman ekip desteği"];
+
+interface Props {
+  content: HeroSectionContent;
+}
+
 /* ── Hero ──────────────────────────────────────────── */
-export default function Hero() {
+export default function Hero({ content }: Props) {
+  const gradient = content.gradient || "linear-gradient(90deg, #00D084 0%, #18AFC1 100%)";
+  const bgColor = content.bgColor || "#F3F4FB";
+
   return (
-    <section className="relative overflow-hidden bg-[#F3F4FB] pb-10 pt-10">
+    <section
+      className="relative overflow-hidden pb-10 pt-10"
+      style={{
+        backgroundColor: bgColor,
+        backgroundImage: content.bgImage ? `url(${content.bgImage})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
 
       {/* Arka plan dekor */}
       <div className="pointer-events-none absolute inset-0 select-none">
-        <div
-          className="absolute inset-0 opacity-[0.15]"
-          style={{
-            backgroundImage: "radial-gradient(#CBD5E1 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
+        {content.dotPattern && (
+          <div
+            className="absolute inset-0 opacity-[0.15]"
+            style={{
+              backgroundImage: "radial-gradient(#CBD5E1 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
+        )}
         <div
           className="absolute right-0 top-0 h-[700px] w-[700px]"
           style={{
@@ -48,37 +69,39 @@ export default function Hero() {
             className="flex flex-col pb-0"
           >
             {/* Badge */}
-            <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#E4E9F2] bg-white px-4 py-1.5 text-[11.5px] font-semibold text-[#64748B] shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-[#4F46E5]" />
-                10+ Yıllık Deneyim · %95 Başarı Oranı
-              </span>
-            </motion.div>
+            {content.badge && (
+              <motion.div variants={fadeUp}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-[#E4E9F2] bg-white px-4 py-1.5 text-[11.5px] font-semibold text-[#64748B] shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5 text-[#4F46E5]" />
+                  {content.badge}
+                </span>
+              </motion.div>
+            )}
 
             {/* H1 */}
             <motion.h1
               variants={fadeUp}
               className="mt-4 text-[42px] font-extrabold leading-[1.07] tracking-tight text-[#0F172A] sm:text-5xl"
             >
-              İşletmenizin
+              {content.title1}
               <br />
               <span
                 className="bg-clip-text text-transparent"
-                style={{ backgroundImage: "linear-gradient(90deg, #00D084 0%, #18AFC1 100%)" }}
+                style={{ backgroundImage: gradient }}
               >
-                Dijital Yol Arkadaşı.
+                {content.title2}
               </span>
             </motion.h1>
 
             {/* Subtitle */}
-            <motion.p
-              variants={fadeUp}
-              className="mt-4 max-w-[380px] text-[14.5px] leading-relaxed text-[#64748B]"
-            >
-              Partnerix işletmenizi analiz eder, ihtiyaçlarınızı belirler ve Türkiye&apos;nin
-              en doğru dijital çözüm ortaklarını{" "}
-              <span className="font-semibold text-[#0F172A]">ücretsiz</span> olarak önerir.
-            </motion.p>
+            {content.subtitle && (
+              <motion.p
+                variants={fadeUp}
+                className="mt-4 max-w-[380px] text-[14.5px] leading-relaxed text-[#64748B]"
+              >
+                {content.subtitle}
+              </motion.p>
+            )}
 
             {/* CTA */}
             <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center gap-3">
@@ -103,7 +126,7 @@ export default function Hero() {
 
             {/* Trust sinyalleri */}
             <motion.div variants={fadeUp} className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-              {["Ücretsiz danışmanlık", "Tarafsız öneriler", "Bağlayıcı sözleşme yok", "Uzman ekip desteği"].map((t) => (
+              {TRUST_SIGNALS.map((t) => (
                 <span key={t} className="flex items-center gap-1.5 text-[12px] text-[#64748B]">
                   <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-[#00D084]" />
                   {t}
@@ -114,9 +137,11 @@ export default function Hero() {
           </motion.div>
 
           {/* ── Sağ: Partnerix ürün demosu ──────────── */}
-          <div className="hidden lg:flex lg:justify-center">
-            <PartnerixScene />
-          </div>
+          {content.showPartnerixDemo && (
+            <div className="hidden lg:flex lg:justify-center">
+              <PartnerixScene welcomeMessage={content.partnerixMessage ?? undefined} />
+            </div>
+          )}
 
         </div>
       </div>
