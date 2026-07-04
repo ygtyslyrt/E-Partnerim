@@ -67,7 +67,9 @@ function SolutionCard({ solution, index }: { solution: SolutionWithFeatures; ind
                 </span>
               )}
             </div>
-            <h3 className="text-xl font-extrabold tracking-tight text-[#0F172A]">{solution.title}</h3>
+            <Link href={`/cozumler/${solution.slug}`} className="block text-xl font-extrabold tracking-tight text-[#0F172A] hover:text-[#3730A3] transition-colors">
+              {solution.title}
+            </Link>
           </div>
         </div>
 

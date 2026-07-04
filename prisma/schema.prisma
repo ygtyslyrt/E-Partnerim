@@ -93,6 +93,13 @@ enum LeadSource {
   REFERRAL
   SOCIAL
   ORGANIC
+  PARTNER_APPLICATION
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ActivityType {
@@ -127,6 +134,7 @@ model User {
   assignedLeads Lead[]       @relation("AssignedLeads")
   leadNotes     LeadNote[]
   mediaUploads  Media[]
+  reviewedPartnerApplications PartnerApplication[]
 }
 
 // ═══════════════════════════════════════════════════════
@@ -483,6 +491,7 @@ model Platform {
   seoTitle    String?
   seoDesc     String?           @db.Text
   features    PlatformFeature[]
+  partners    PartnerPlatform[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -516,6 +525,7 @@ model Solution {
   seoTitle  String?
   seoDesc   String?           @db.Text
   features  SolutionFeature[]
+  partners  PartnerSolution[]
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 }
@@ -527,6 +537,124 @@ model SolutionFeature {
   type       FeatureType
   text       String
   order      Int         @default(0)
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTNER YÖNETİM SİSTEMİ (İş Ortakları)
+// Not: PartnerixFlow (Hero sihirbazı) ile karıştırılmasın — tamamen ayrı bir modül.
+// ═══════════════════════════════════════════════════════
+
+model Partner {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  tagline     String?
+  shortDesc   String?
+  description String?  @db.Text
+  logo        String?
+  coverImage  String?
+  website     String?
+  email       String?
+  phone       String?
+  whatsapp    String?
+  city        String?
+  category    String?
+  featured    Boolean  @default(false)
+  verified    Boolean  @default(false)
+  status      Status   @default(DRAFT)
+  order       Int      @default(0)
+  seoTitle    String?
+  seoDesc     String?  @db.Text
+  ogImage     String?
+
+  packages   PartnerPackage[]
+  references PartnerReference[]
+  media      PartnerMedia[]
+  platforms  PartnerPlatform[]
+  solutions  PartnerSolution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PartnerPackage {
+  id          String  @id @default(cuid())
+  partnerId   String
+  partner     Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name        String
+  description String? @db.Text
+  price       String?
+  features    Json?
+  order       Int     @default(0)
+}
+
+// Müşteri referansları / testimonial
+model PartnerReference {
+  id        String  @id @default(cuid())
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  name      String
+  role      String?
+  company   String?
+  content   String  @db.Text
+  avatar    String?
+  rating    Int?
+  order     Int     @default(0)
+}
+
+// Portföy / medya galerisi
+model PartnerMedia {
+  id        String  @id @default(cuid())
+  partnerId String
+  partner   Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  order     Int     @default(0)
+}
+
+model PartnerPlatform {
+  partnerId  String
+  partner    Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  platformId String
+  platform   Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([partnerId, platformId])
+}
+
+model PartnerSolution {
+  partnerId  String
+  partner    Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  solutionId String
+  solution   Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+
+  @@id([partnerId, solutionId])
+}
+
+// Herkese açık "iş ortağı ol" başvurusu — admin onayından geçince Partner'a dönüşür
+model PartnerApplication {
+  id          String            @id @default(cuid())
+  companyName String
+  contactName String
+  email       String
+  phone       String?
+  website     String?
+  category    String?
+  shortDesc   String?
+  message     String?           @db.Text
+
+  interestedPlatforms Json?
+  interestedSolutions Json?
+
+  status      ApplicationStatus @default(PENDING)
+  reviewNote  String?           @db.Text
+  reviewedAt  DateTime?
+  reviewedById String?
+  reviewedBy  User?             @relation(fields: [reviewedById], references: [id])
+
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 // ═══════════════════════════════════════════════════════
@@ -693,6 +821,7 @@ model Lead {
   notes           LeadNote[]
   activities      LeadActivity[]
   tags            LeadTag[]
+  partnerApplications PartnerApplication[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

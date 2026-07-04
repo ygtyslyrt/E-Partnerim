@@ -1,0 +1,139 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { CheckCircle2, XCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import PageHero from "@/components/layout/PageHero";
+import CTASection from "@/components/sections/CTASection";
+import { getIcon } from "@/lib/icon-map";
+import { getSolution } from "@/lib/actions/solutions";
+import { getPublishedPartners } from "@/lib/actions/partners";
+
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const solution = await getSolution(slug);
+  if (!solution) return { title: "Çözüm Bulunamadı — E-Partnerim" };
+  return {
+    title: solution.seoTitle || `${solution.title} — E-Partnerim`,
+    description: solution.seoDesc || solution.shortDesc || undefined,
+  };
+}
+
+export default async function SolutionDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const solution = await getSolution(slug);
+  if (!solution || solution.status !== "PUBLISHED") notFound();
+
+  const { data: partners } = await getPublishedPartners({ solutionId: solution.id });
+  const advantages = solution.features.filter((f) => f.type === "ADVANTAGE");
+  const disadvantages = solution.features.filter((f) => f.type === "DISADVANTAGE");
+  const Icon = getIcon(solution.icon);
+  const color = solution.color || "#3730A3";
+
+  return (
+    <>
+      <PageHero
+        breadcrumb={[{ label: "Ana Sayfa", href: "/" }, { label: "Çözümler", href: "/cozumler" }, { label: solution.title }]}
+        badge={solution.category ?? undefined}
+        title={solution.title}
+        subtitle={solution.shortDesc ?? undefined}
+      />
+
+      <section className="bg-white py-16">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
+          <div className="space-y-8 lg:col-span-2">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ backgroundColor: `${color}1A` }}>
+                <Icon size={28} style={{ color }} />
+              </div>
+            </div>
+
+            {solution.content && (
+              <div>
+                <h2 className="mb-3 text-lg font-bold text-[#0F172A]">Detaylar</h2>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-[#334155]">{solution.content}</p>
+              </div>
+            )}
+
+            {advantages.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-lg font-bold text-[#0F172A]">Neler Sunuyoruz?</h2>
+                <ul className="space-y-2">
+                  {advantages.map((f) => (
+                    <li key={f.id} className="flex items-start gap-2.5 text-sm text-[#334155]">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#00D084]" /> {f.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {disadvantages.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-lg font-bold text-[#0F172A]">Dikkat Edilmesi Gerekenler</h2>
+                <ul className="space-y-2">
+                  {disadvantages.map((f) => (
+                    <li key={f.id} className="flex items-start gap-2.5 text-sm text-[#334155]">
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" /> {f.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {partners.length > 0 && (
+              <div>
+                <h2 className="mb-4 text-lg font-bold text-[#0F172A]">Bu Alanda Uzman İş Ortakları</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {partners.map((p) => (
+                    <Link key={p.id} href={`/partnerler/${p.slug}`} className="group flex items-center gap-3 rounded-xl border border-[#E8EEF0] bg-white p-4 transition hover:border-[#00D084]/30 hover:shadow-sm">
+                      {p.logo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.logo} alt={p.name} className="h-10 w-10 shrink-0 rounded-lg object-contain" />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#3730A3] text-sm font-bold text-white">{p.name[0]}</div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-semibold text-[#0F172A] group-hover:text-[#00D084] transition-colors">{p.name}</span>
+                          {p.verified && <ShieldCheck size={13} className="shrink-0 text-[#00D084]" />}
+                        </div>
+                        {p.shortDesc && <p className="truncate text-xs text-[#94A3B8]">{p.shortDesc}</p>}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="space-y-4">
+            <div className="rounded-2xl border border-[#E8EEF0] bg-[#FAFCFC] p-5 space-y-2">
+              {solution.ctaLabel && solution.ctaUrl && (
+                <a
+                  href={solution.ctaUrl}
+                  target={solution.ctaUrl.includes("wa.me") ? "_blank" : undefined}
+                  rel={solution.ctaUrl.includes("wa.me") ? "noopener noreferrer" : undefined}
+                  className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: color }}
+                >
+                  {solution.ctaLabel} <ArrowRight size={14} />
+                </a>
+              )}
+              {solution.ctaLabel2 && solution.ctaUrl2 && (
+                <Link href={solution.ctaUrl2} className="flex items-center justify-center gap-2 rounded-xl border border-[#E4E9F2] px-4 py-2.5 text-sm font-semibold text-[#0F172A] hover:bg-slate-50 transition">
+                  {solution.ctaLabel2}
+                </Link>
+              )}
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <CTASection />
+    </>
+  );
+}

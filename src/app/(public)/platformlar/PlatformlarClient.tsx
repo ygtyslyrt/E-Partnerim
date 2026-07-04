@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import PageHero from "@/components/layout/PageHero"
 import CTASection from "@/components/sections/CTASection"
 import { CheckCircle2, ArrowRight } from "lucide-react"
@@ -28,7 +29,10 @@ function PlatformCard({ platform }: { platform: PlatformWithFeatures }) {
   const advantages = platform.features.filter((f) => f.type === "ADVANTAGE")
 
   return (
-    <div className="flex flex-col rounded-2xl border border-[#E8EEF0] bg-white p-6 transition-all hover:border-[#00D084]/25 hover:shadow-sm">
+    <Link
+      href={`/platformlar/${platform.slug}`}
+      className="flex flex-col rounded-2xl border border-[#E8EEF0] bg-white p-6 transition-all hover:border-[#00D084]/25 hover:shadow-sm"
+    >
       <div
         className="mb-4 inline-flex w-fit items-center rounded-xl px-4 py-2"
         style={{ backgroundColor: hexToRgba(color, 0.09) }}
@@ -66,7 +70,7 @@ function PlatformCard({ platform }: { platform: PlatformWithFeatures }) {
           <p className="text-xs font-medium text-[#374151]">{platform.description}</p>
         </div>
       )}
-    </div>
+    </Link>
   )
 }
 
