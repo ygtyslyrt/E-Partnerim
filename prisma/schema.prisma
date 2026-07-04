@@ -845,7 +845,8 @@ model PartnerixCharacter {
   audioSpeakingEffect Boolean @default(false)
 
   // Ana Sayfa Yerleşimi
-  position       String  @default("right")
+  enabled        Boolean @default(true)
+  position       String  @default("right")   // left | right | bottom
   desktopVisible Boolean @default(true)
   mobileVisible  Boolean @default(false)
   height         String  @default("460px")
@@ -855,6 +856,18 @@ model PartnerixCharacter {
   marginBottom   String?
   marginLeft     String?
   padding        String?
+  zIndex         Int     @default(10)
+
+  // Mobil override (boşsa masaüstü değeri kullanılır)
+  positionMobile String?
+  scaleMobile    Float?
+  heightMobile   String?
+  widthMobile    String?
+
+  // Animasyonlar (2D CSS)
+  hoverAnimation    String @default("none")   // none | scale | bounce | rotate | glow
+  entranceAnimation String @default("fade")   // none | fade | slide-up | slide-left | slide-right | zoom
+  talkingAnimation  String @default("none")   // none | pulse | bounce | shake
 
   // Karşılama Ekranı
   welcomeTitle       String?

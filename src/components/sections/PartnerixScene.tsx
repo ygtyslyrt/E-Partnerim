@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
-import Image from "next/image";
+import PartnerixCharacterVisual from "./PartnerixCharacterVisual";
+import type { CharacterVisualStyle } from "./PartnerixCharacterVisual";
 import {
   ShoppingCart, Building2, Megaphone, Gift, MoreHorizontal,
   BarChart2, Settings2, Package, TrendingUp, Rocket, Zap,
@@ -132,84 +133,6 @@ function SpeechBubbles({ welcomeMessage, style }: { welcomeMessage?: string; sty
           </div>
         </motion.div>
       ))}
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────
-   Partnerix Karakteri
-   Kart yok. Sahnenin içinde bağımsız. Animasyonlu.
-──────────────────────────────────────────────────────────────── */
-interface RobotStyle {
-  color: string; shadowEnabled: boolean; glowEnabled: boolean; glowColor: string; neonSecondary: string; backgroundEffect: string;
-}
-
-function RobotCharacter({ style }: { style: RobotStyle }) {
-  const glowBackground = style.backgroundEffect === "gradient"
-    ? `linear-gradient(135deg, ${style.glowColor} 0%, ${style.neonSecondary} 100%)`
-    : style.glowColor;
-
-  return (
-    <div
-      className="relative flex-shrink-0"
-      style={{ width: 200, height: CARD_H }}
-    >
-      {/* Zemin parıltısı */}
-      {style.glowEnabled && style.backgroundEffect !== "none" && (
-        <div
-          className="absolute bottom-0 left-1/2 h-16 w-40 -translate-x-1/2 rounded-full opacity-[0.10]"
-          style={{ background: glowBackground, filter: "blur(28px)" }}
-        />
-      )}
-
-      {/* Float */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut" }}
-        style={{ willChange: "transform" }}
-      >
-        {/* Sway */}
-        <motion.div
-          className="absolute inset-0"
-          animate={{ x: [0, 3, -2, 3, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-        >
-          {/* Wave (hafif el sallama) */}
-          <motion.div
-            className="absolute inset-0"
-            style={{ transformOrigin: "bottom center" }}
-            animate={{ rotate: [0, -2.5, 0, -2.5, 0, 0, 0, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }}
-          >
-            {/* Breathe */}
-            <motion.div
-              className="absolute inset-0"
-              animate={{ scale: [1, 1.014, 1] }}
-              transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Image
-                src="/partnerix-robot.png"
-                alt="Partnerix AI Danışmanı"
-                fill
-                className="object-contain object-bottom"
-                style={style.shadowEnabled ? { filter: "drop-shadow(0 14px 28px rgba(79,70,229,0.10))" } : undefined}
-                priority
-              />
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-
-      {/* Ayak altı gölgesi */}
-      {style.shadowEnabled && (
-        <motion.div
-          animate={{ scaleX: [1, 0.74, 1], opacity: [0.13, 0.04, 0.13] }}
-          transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 left-1/2 h-2.5 w-28 -translate-x-1/2 rounded-full"
-          style={{ background: "#1E1B4B", filter: "blur(8px)" }}
-        />
-      )}
     </div>
   );
 }
@@ -422,15 +345,34 @@ function WizardCard({
    │  sol, bağımsız  sağ, flex-1                │
    └─────────────────────────────────────────────┘
 ──────────────────────────────────────────────────────────────── */
+const ENTRANCE_VARIANTS: Record<string, Variants> = {
+  fade:       { hidden: { opacity: 0 },                 show: { opacity: 1 } },
+  "slide-up": { hidden: { opacity: 0, y: 12 },           show: { opacity: 1, y: 0 } },
+  "slide-left":  { hidden: { opacity: 0, x: 24 },        show: { opacity: 1, x: 0 } },
+  "slide-right": { hidden: { opacity: 0, x: -24 },       show: { opacity: 1, x: 0 } },
+  zoom:       { hidden: { opacity: 0, scale: 0.9 },      show: { opacity: 1, scale: 1 } },
+  none:       { hidden: {},                              show: {} },
+};
+
 interface Props {
   welcomeMessage?: string;
   character?: PartnerixCharacterFull;
+  isDesktop?: boolean;
 }
 
-export default function PartnerixScene({ welcomeMessage, character }: Props) {
+export default function PartnerixScene({ welcomeMessage, character, isDesktop = true }: Props) {
   const [step,    setStep]    = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [done,    setDone]    = useState(false);
+  const [isTalking, setIsTalking] = useState(true);
+  const talkingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setIsTalking(true);
+    if (talkingTimer.current) clearTimeout(talkingTimer.current);
+    talkingTimer.current = setTimeout(() => setIsTalking(false), 2200);
+    return () => { if (talkingTimer.current) clearTimeout(talkingTimer.current); };
+  }, [step]);
 
   function handleNext() {
     if (!pending) return;
@@ -439,13 +381,23 @@ export default function PartnerixScene({ welcomeMessage, character }: Props) {
     else setStep((s) => s + 1);
   }
 
-  const robotStyle: RobotStyle = {
+  const effectiveScale = (isDesktop ? character?.scale : character?.scaleMobile ?? character?.scale) ?? 1;
+
+  const visualStyle: CharacterVisualStyle = {
+    avatar: character?.avatar ?? null,
+    scale: effectiveScale,
+    posX: character?.posX ?? 0,
+    posY: character?.posY ?? 0,
     color: character?.robotColor ?? PARTNERIX,
     shadowEnabled: character?.shadowEnabled ?? true,
     glowEnabled: character?.glowEnabled ?? true,
     glowColor: character?.glowColor ?? PARTNERIX,
     neonSecondary: character?.neonColorSecondary ?? "#818CF8",
     backgroundEffect: character?.backgroundEffect ?? "glow",
+    hoverAnimation: character?.hoverAnimation ?? "none",
+    talkingAnimation: character?.talkingAnimation ?? "none",
+    isTalking,
+    zIndex: character?.zIndex ?? 10,
   };
 
   const bubbleStyle: BubbleStyle = {
@@ -464,29 +416,32 @@ export default function PartnerixScene({ welcomeMessage, character }: Props) {
     .map((c) => ({ label: c.label, href: c.href, color: c.color, hoverColor: c.hoverColor, icon: c.icon }));
 
   const firstBubble = character?.firstBubbleText || welcomeMessage;
+  const effectiveWidth = (isDesktop ? character?.width : character?.widthMobile || character?.width) || "680px";
+  const entranceVariant = ENTRANCE_VARIANTS[character?.entranceAnimation ?? "fade"] ?? ENTRANCE_VARIANTS.fade;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial="hidden"
+      animate="show"
+      variants={entranceVariant}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
       className="flex w-full flex-col gap-3"
-      style={{ maxWidth: character?.width || "680px" }}
+      style={{ maxWidth: effectiveWidth }}
     >
       {/* 1. Konuşma balonları — robotun üstünde, kart/container yok */}
       <SpeechBubbles welcomeMessage={firstBubble} style={bubbleStyle} />
 
       {/* 2. Robot (sol) + Wizard kart (sağ) — aynı sahne, items-end */}
       <div className="flex items-end gap-5">
-        <RobotCharacter style={robotStyle} />
+        <PartnerixCharacterVisual style={visualStyle} />
         <WizardCard
           step={step}
           pending={pending}
           onSelect={setPending}
           onNext={handleNext}
           completed={done}
-          accentColor={robotStyle.color}
-          gradientEnd={robotStyle.neonSecondary}
+          accentColor={visualStyle.color}
+          gradientEnd={visualStyle.neonSecondary}
           isDark={(character?.theme ?? "light") === "dark"}
           ctas={ctas}
         />

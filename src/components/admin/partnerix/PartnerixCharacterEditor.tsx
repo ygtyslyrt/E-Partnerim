@@ -3,10 +3,12 @@
 import { useState, useTransition, useCallback } from "react"
 import {
   Save, Loader2, CheckCircle, User, Box, Sparkles, MessageSquareText,
-  Film, Zap, Volume2, LayoutPanelLeft, MousePointerClick, Hand,
+  Film, Zap, Volume2, LayoutPanelLeft, MousePointerClick, Hand, Eye,
 } from "lucide-react"
 import MediaPickerButton from "@/components/admin/media/MediaPickerButton"
 import ListItemEditor from "@/components/admin/shared/ListItemEditor"
+import PartnerixCharacterVisual from "@/components/sections/PartnerixCharacterVisual"
+import type { CharacterVisualStyle } from "@/components/sections/PartnerixCharacterVisual"
 import { updatePartnerixCharacter } from "@/lib/actions/partnerix-character"
 import type { PartnerixCharacterFull, PartnerixCharacterInput } from "@/lib/actions/partnerix-character"
 
@@ -104,6 +106,7 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
     audioVolume: initialData?.audioVolume ?? 0.7,
     audioAutoplay: initialData?.audioAutoplay ?? false,
     audioSpeakingEffect: initialData?.audioSpeakingEffect ?? false,
+    enabled: initialData?.enabled ?? true,
     position: initialData?.position ?? "right",
     desktopVisible: initialData?.desktopVisible ?? true,
     mobileVisible: initialData?.mobileVisible ?? false,
@@ -114,6 +117,14 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
     marginBottom: initialData?.marginBottom ?? "",
     marginLeft: initialData?.marginLeft ?? "",
     padding: initialData?.padding ?? "",
+    zIndex: initialData?.zIndex ?? 10,
+    positionMobile: initialData?.positionMobile ?? "",
+    scaleMobile: initialData?.scaleMobile != null ? String(initialData.scaleMobile) : "",
+    heightMobile: initialData?.heightMobile ?? "",
+    widthMobile: initialData?.widthMobile ?? "",
+    hoverAnimation: initialData?.hoverAnimation ?? "none",
+    entranceAnimation: initialData?.entranceAnimation ?? "fade",
+    talkingAnimation: initialData?.talkingAnimation ?? "none",
     welcomeTitle: initialData?.welcomeTitle ?? "",
     welcomeSubtitle: initialData?.welcomeSubtitle ?? "",
     welcomeMessage: initialData?.welcomeMessage ?? "",
@@ -141,8 +152,31 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
 
   const animationChoices = animations.map((a) => ({ _key: a._key, label: a.label || a.key }))
 
+  const [previewTalking, setPreviewTalking] = useState(false)
+
+  const previewStyle: CharacterVisualStyle = {
+    avatar: form.avatar || null,
+    scale: form.scale,
+    posX: form.posX,
+    posY: form.posY,
+    color: form.robotColor,
+    shadowEnabled: form.shadowEnabled,
+    glowEnabled: form.glowEnabled,
+    glowColor: form.glowColor,
+    neonSecondary: form.neonColorSecondary,
+    backgroundEffect: form.backgroundEffect,
+    hoverAnimation: form.hoverAnimation,
+    talkingAnimation: form.talkingAnimation,
+    isTalking: previewTalking,
+    zIndex: 1,
+  }
+
   const buildPayload = useCallback((): PartnerixCharacterInput => ({
     ...form,
+    scaleMobile: form.scaleMobile === "" ? null : Number(form.scaleMobile),
+    positionMobile: form.positionMobile || null,
+    heightMobile: form.heightMobile || null,
+    widthMobile: form.widthMobile || null,
     welcomeAnimationKey: welcomeAnimationKey || null,
     animations: animations.map((a) => ({ _key: a._key, key: a.key, label: a.label, file: a.file || null })),
     behaviors: BEHAVIOR_TRIGGERS.map((t) => ({ trigger: t.trigger, animationKey: behaviorMap[t.trigger] || null })),
@@ -183,6 +217,29 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
         </div>
       </div>
 
+      <Section title="Canlı Önizleme" icon={Eye}>
+        <div className="space-y-3">
+          <div
+            className="relative overflow-hidden rounded-xl border border-[#E4EAF5]"
+            style={{ height: 280, background: form.theme === "dark" ? "#0F172A" : "#F8FAFC" }}
+          >
+            <div style={{ position: "absolute", left: "50%", top: 16, transform: "translateX(-50%) scale(0.55)", transformOrigin: "top center" }}>
+              <PartnerixCharacterVisual style={previewStyle} />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => { setPreviewTalking(true); setTimeout(() => setPreviewTalking(false), 2200) }}
+              className="rounded-lg border border-[#E4EAF5] bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Konuşma Animasyonunu Önizle
+            </button>
+            <p className="text-xs text-slate-400">Fareyle karakterin üzerine gelerek hover animasyonunu test edebilirsiniz. Bu önizleme kaydedilmemiş değişiklikleri de anlık gösterir.</p>
+          </div>
+        </div>
+      </Section>
+
       <Section title="Karakter Bilgisi" icon={User}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -208,6 +265,9 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
 
       <Section title="3D Model & Transform" icon={Box}>
         <div className="space-y-4">
+          <p className="rounded-lg bg-[#F8FAFC] px-3 py-2 text-xs text-slate-500">
+            Ölçek ve X/Y Pozisyon şu an 2D karakterde ofset/boyut olarak kullanılıyor. Z pozisyon ve rotasyon ileride gerçek 3D model eklendiğinde aktifleşecek.
+          </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={LABEL}>Varsayılan Poz</label>
@@ -269,6 +329,38 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
               <input type="checkbox" checked={form.glowEnabled} onChange={(e) => set("glowEnabled", e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-[#3730A3]" />
               Glow Efekti Aç
             </label>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={LABEL}>Hover Animasyonu</label>
+              <select value={form.hoverAnimation} onChange={(e) => set("hoverAnimation", e.target.value)} className={INPUT}>
+                <option value="none">Yok</option>
+                <option value="scale">Büyüt</option>
+                <option value="bounce">Zıpla</option>
+                <option value="rotate">Döndür</option>
+                <option value="glow">Glow'u Yoğunlaştır</option>
+              </select>
+            </div>
+            <div>
+              <label className={LABEL}>Giriş Animasyonu</label>
+              <select value={form.entranceAnimation} onChange={(e) => set("entranceAnimation", e.target.value)} className={INPUT}>
+                <option value="fade">Fade</option>
+                <option value="slide-up">Aşağıdan Kayma</option>
+                <option value="slide-left">Soldan Kayma</option>
+                <option value="slide-right">Sağdan Kayma</option>
+                <option value="zoom">Zoom</option>
+                <option value="none">Yok</option>
+              </select>
+            </div>
+            <div>
+              <label className={LABEL}>Konuşurken Animasyon</label>
+              <select value={form.talkingAnimation} onChange={(e) => set("talkingAnimation", e.target.value)} className={INPUT}>
+                <option value="none">Yok</option>
+                <option value="pulse">Nabız (Pulse)</option>
+                <option value="bounce">Zıplama</option>
+                <option value="shake">Titreme</option>
+              </select>
+            </div>
           </div>
         </div>
       </Section>
@@ -360,12 +452,17 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
 
       <Section title="Ana Sayfa Yerleşimi" icon={LayoutPanelLeft}>
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-[#3730A3]" />
+            Partnerix Karakterini Göster (ana anahtar)
+          </label>
+          <div className="grid grid-cols-4 gap-4">
             <div>
               <label className={LABEL}>Konum</label>
               <select value={form.position} onChange={(e) => set("position", e.target.value)} className={INPUT}>
                 <option value="right">Sağ</option>
                 <option value="left">Sol</option>
+                <option value="bottom">Alt</option>
               </select>
             </div>
             <div>
@@ -376,6 +473,7 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
               <label className={LABEL}>Genişlik</label>
               <input value={form.width} onChange={(e) => set("width", e.target.value)} className={INPUT} />
             </div>
+            <NumberField label="Z-Index" value={form.zIndex} onChange={(v) => set("zIndex", v)} />
           </div>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -399,6 +497,33 @@ export default function PartnerixCharacterEditor({ initialData }: Props) {
           <div>
             <label className={LABEL}>Padding</label>
             <input value={form.padding} onChange={(e) => set("padding", e.target.value)} className={INPUT} />
+          </div>
+
+          <div className="rounded-xl border border-[#E4EAF5] bg-[#F8FAFC] p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Mobil Ayarları (boş bırakılırsa masaüstü değeri kullanılır)</p>
+            <div className="grid grid-cols-4 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Mobil Konum</label>
+                <select value={form.positionMobile} onChange={(e) => set("positionMobile", e.target.value)} className={SMALL_INPUT}>
+                  <option value="">Masaüstü ile aynı</option>
+                  <option value="right">Sağ</option>
+                  <option value="left">Sol</option>
+                  <option value="bottom">Alt</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Mobil Ölçek</label>
+                <input type="number" step={0.1} value={form.scaleMobile} onChange={(e) => set("scaleMobile", e.target.value)} placeholder={String(form.scale)} className={SMALL_INPUT} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Mobil Yükseklik</label>
+                <input value={form.heightMobile} onChange={(e) => set("heightMobile", e.target.value)} placeholder={form.height} className={SMALL_INPUT} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Mobil Genişlik</label>
+                <input value={form.widthMobile} onChange={(e) => set("widthMobile", e.target.value)} placeholder={form.width} className={SMALL_INPUT} />
+              </div>
+            </div>
           </div>
         </div>
       </Section>

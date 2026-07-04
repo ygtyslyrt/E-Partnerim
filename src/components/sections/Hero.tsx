@@ -6,6 +6,7 @@ import { Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import PartnerixScene from "./PartnerixScene";
 import type { HeroSectionContent } from "@prisma/client";
 import type { PartnerixCharacterFull } from "@/lib/actions/partnerix-character";
+import { useIsDesktop } from "@/lib/hooks/useIsDesktop";
 
 /* ── Animasyon varyantları ─────────────────────────── */
 const container: Variants = {
@@ -29,9 +30,15 @@ export default function Hero({ content, character }: Props) {
   const gradient = content.gradient || "linear-gradient(90deg, #00D084 0%, #18AFC1 100%)";
   const bgColor = content.bgColor || "#F3F4FB";
 
+  const isDesktop = useIsDesktop();
+  const characterEnabled = character?.enabled ?? true;
   const desktopVisible = character?.desktopVisible ?? true;
   const mobileVisible = character?.mobileVisible ?? false;
-  const positionClass = character?.position === "left" ? "lg:justify-start" : "lg:justify-center";
+  const effectivePosition = (isDesktop ? character?.position : character?.positionMobile || character?.position) ?? "right";
+  const isBottom = effectivePosition === "bottom";
+  const gridColsClass = isBottom ? "lg:grid-cols-1" : "lg:grid-cols-[420px_1fr]";
+  const textOrderClass = effectivePosition === "left" ? "order-2" : "order-1";
+  const demoOrderClass = effectivePosition === "left" ? "order-1" : "order-2";
   const visibilityClass = `${mobileVisible ? "flex" : "hidden"} ${desktopVisible ? "lg:flex" : "lg:hidden"}`;
 
   return (
@@ -66,14 +73,14 @@ export default function Hero({ content, character }: Props) {
       </div>
 
       <div className="relative mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10">
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[420px_1fr] lg:gap-10">
+        <div className={`grid grid-cols-1 items-start gap-6 ${gridColsClass} lg:gap-10`}>
 
           {/* ── Sol: Metin ──────────────────────────── */}
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="flex flex-col pb-0"
+            className={`flex flex-col pb-0 ${textOrderClass}`}
           >
             {/* Badge */}
             {content.badge && (
@@ -143,10 +150,10 @@ export default function Hero({ content, character }: Props) {
 
           </motion.div>
 
-          {/* ── Sağ: Partnerix ürün demosu ──────────── */}
-          {content.showPartnerixDemo && (
+          {/* ── Partnerix ürün demosu (konum ayarına göre sağ/sol/alt) ── */}
+          {content.showPartnerixDemo && characterEnabled && (
             <div
-              className={`${visibilityClass} ${positionClass}`}
+              className={`${visibilityClass} lg:justify-center ${demoOrderClass}`}
               style={{
                 marginTop: character?.marginTop || undefined,
                 marginRight: character?.marginRight || undefined,
@@ -155,7 +162,7 @@ export default function Hero({ content, character }: Props) {
                 padding: character?.padding || undefined,
               }}
             >
-              <PartnerixScene welcomeMessage={content.partnerixMessage ?? undefined} character={character} />
+              <PartnerixScene welcomeMessage={content.partnerixMessage ?? undefined} character={character} isDesktop={isDesktop} />
             </div>
           )}
 

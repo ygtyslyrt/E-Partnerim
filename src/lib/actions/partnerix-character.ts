@@ -84,6 +84,7 @@ export interface PartnerixCharacterInput {
   audioVolume: number
   audioAutoplay: boolean
   audioSpeakingEffect: boolean
+  enabled: boolean
   position: string
   desktopVisible: boolean
   mobileVisible: boolean
@@ -94,6 +95,14 @@ export interface PartnerixCharacterInput {
   marginBottom?: string | null
   marginLeft?: string | null
   padding?: string | null
+  zIndex: number
+  positionMobile?: string | null
+  scaleMobile?: number | null
+  heightMobile?: string | null
+  widthMobile?: string | null
+  hoverAnimation: string
+  entranceAnimation: string
+  talkingAnimation: string
   welcomeTitle?: string | null
   welcomeSubtitle?: string | null
   welcomeMessage?: string | null
@@ -191,6 +200,7 @@ export async function updatePartnerixCharacter(data: PartnerixCharacterInput): P
         audioVolume: data.audioVolume,
         audioAutoplay: data.audioAutoplay,
         audioSpeakingEffect: data.audioSpeakingEffect,
+        enabled: data.enabled,
         position: data.position,
         desktopVisible: data.desktopVisible,
         mobileVisible: data.mobileVisible,
@@ -201,6 +211,14 @@ export async function updatePartnerixCharacter(data: PartnerixCharacterInput): P
         marginBottom: data.marginBottom || null,
         marginLeft: data.marginLeft || null,
         padding: data.padding || null,
+        zIndex: data.zIndex,
+        positionMobile: data.positionMobile || null,
+        scaleMobile: data.scaleMobile ?? null,
+        heightMobile: data.heightMobile || null,
+        widthMobile: data.widthMobile || null,
+        hoverAnimation: data.hoverAnimation,
+        entranceAnimation: data.entranceAnimation,
+        talkingAnimation: data.talkingAnimation,
         welcomeTitle: data.welcomeTitle || null,
         welcomeSubtitle: data.welcomeSubtitle || null,
         welcomeMessage: data.welcomeMessage || null,
