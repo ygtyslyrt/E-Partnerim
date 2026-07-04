@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import PageHero from "@/components/layout/PageHero";
 import CTASection from "@/components/sections/CTASection";
 import { Clock } from "lucide-react";
@@ -67,10 +70,11 @@ export default async function BlogSlugPage({ params }: Props) {
             <img src={post.coverImage} alt={post.title} className="mb-10 h-72 w-full rounded-2xl object-cover" />
           )}
 
-          <div
-            className="space-y-4 text-[15px] leading-relaxed text-[#334155] [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-[#0F172A] [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-[#0F172A] [&_a]:text-[#00D084] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_strong]:text-[#0F172A]"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
+          <div className="space-y-4 text-[15px] leading-relaxed text-[#334155] [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-[#0F172A] [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-[#0F172A] [&_a]:text-[#00D084] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_p]:mt-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#00D084]/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[#64748B] [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:text-slate-100 [&_img]:rounded-xl [&_strong]:font-semibold [&_strong]:text-[#0F172A]">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {post.content}
+            </ReactMarkdown>
+          </div>
 
           {post.tags.length > 0 && (
             <div className="mt-10 flex flex-wrap gap-2 border-t border-[#E8EEF0] pt-6">
