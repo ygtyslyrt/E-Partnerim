@@ -92,7 +92,11 @@
       "Bash(netstat -ano)",
       "Bash(ls -la \"aklansın.\")",
       "Bash(file \"aklansın.\")",
-      "Bash(wc -c \"aklansın.\")"
+      "Bash(wc -c \"aklansın.\")",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./node_modules/@prisma/client/package.json'\\).exports, null, 2\\)\\)\")",
+      "Bash(grep -n '^export.*Role\\\\|^export.*Status\\\\|^export.*PageType\\\\|^export.*SettingsGroup\\\\|^export.*NavLocation\\\\|$Enums' node_modules/.prisma/client/default.d.ts)",
+      "Bash(rm -rf node_modules/.prisma)",
+      "Bash(ls node_modules/.prisma)"
     ]
   }
 }
