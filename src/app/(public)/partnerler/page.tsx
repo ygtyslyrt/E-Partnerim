@@ -3,12 +3,18 @@ import PartnerDirectoryClient from "./PartnerDirectoryClient";
 import { getPublishedPartners } from "@/lib/actions/partners";
 import { getPublishedPlatforms } from "@/lib/actions/platforms";
 import { getPublishedSolutions } from "@/lib/actions/solutions";
+import { getPageBySlug } from "@/lib/actions/seo";
+import { buildPageMetadata } from "@/lib/seo-metadata";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "İş Ortaklarımız — E-Partnerim",
-  description: "Doğrulanmış, uzman e-ticaret ajansları, danışmanlar ve hizmet sağlayıcıları.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPageBySlug("/partnerler");
+  return buildPageMetadata(
+    page,
+    "İş Ortaklarımız — E-Partnerim",
+    "Doğrulanmış, uzman e-ticaret ajansları, danışmanlar ve hizmet sağlayıcıları."
+  );
+}
 
 export default async function PartnerlerPage() {
   const { data: partners } = await getPublishedPartners({ pageSize: 200 });

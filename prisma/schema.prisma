@@ -58,6 +58,7 @@ enum SettingsGroup {
   ANALYTICS
   SOCIAL
   LEGAL
+  SEO
 }
 
 enum FormStatus {
@@ -155,7 +156,10 @@ model Page {
   seoTitle    String?
   seoDesc     String?   @db.Text
   seoKeywords String?
+  ogTitle     String?
+  ogDescription String? @db.Text
   ogImage     String?
+  twitterCard String    @default("summary_large_image")
   robots      String    @default("index,follow")
   canonical   String?
   schema      Json?
@@ -1161,4 +1165,43 @@ model DailyStats {
   consultingForms      Int      @default(0)
   newsletters          Int      @default(0)
   createdAt            DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════════════════
+// SEO — Yönlendirmeler, 404 kayıtları, kırık link raporu
+// ═══════════════════════════════════════════════════════
+
+model Redirect {
+  id        String   @id @default(cuid())
+  fromPath  String   @unique
+  toPath    String
+  type      Int      @default(301) // 301 (kalıcı) veya 302 (geçici)
+  enabled   Boolean  @default(true)
+  hitCount  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// proxy.ts tarafından her 404'te path bazında upsert edilir
+model NotFoundLog {
+  id        String   @id @default(cuid())
+  path      String   @unique
+  referer   String?
+  hitCount  Int      @default(1)
+  resolved  Boolean  @default(false)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @updatedAt
+}
+
+// Manuel "Taramayı Başlat" ile doldurulan iç link sağlık kontrolü
+model BrokenLinkCheck {
+  id            String   @id @default(cuid())
+  sourceLabel   String   // linkin bulunduğu sayfa/öğe adı
+  sourceUrl     String   // linkin bulunduğu sayfa
+  targetUrl     String   // kontrol edilen link
+  statusCode    Int?
+  ok            Boolean  @default(true)
+  lastCheckedAt DateTime @default(now())
+
+  @@unique([sourceUrl, targetUrl])
 }

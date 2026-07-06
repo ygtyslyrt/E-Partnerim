@@ -1,11 +1,28 @@
 import type { Metadata } from "next"
+import { getManagedPages, getRedirects, getNotFoundLogs, getBrokenLinkChecks } from "@/lib/actions/seo"
+import { getSiteSettings, updateSiteSettings } from "@/lib/actions/settings"
+import SeoManager from "@/components/admin/seo/SeoManager"
+
 export const metadata: Metadata = { title: "SEO" }
 
-export default function SeoPage() {
+export default async function SeoPage() {
+  const [pages, redirects, notFoundLogs, brokenLinkChecks, settings] = await Promise.all([
+    getManagedPages(),
+    getRedirects(),
+    getNotFoundLogs(),
+    getBrokenLinkChecks(),
+    getSiteSettings(),
+  ])
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-800">SEO Yönetimi</h1>
-      <p className="mt-1 text-sm text-slate-500">Yakında aktif olacak.</p>
-    </div>
+    <SeoManager
+      pages={pages}
+      redirects={redirects}
+      notFoundLogs={notFoundLogs}
+      brokenLinkChecks={brokenLinkChecks}
+      settings={settings}
+      updateSettings={updateSiteSettings}
+      unresolvedCount={notFoundLogs.filter((l) => !l.resolved).length}
+    />
   )
 }

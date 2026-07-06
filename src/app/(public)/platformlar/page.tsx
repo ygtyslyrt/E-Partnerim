@@ -1,10 +1,16 @@
 import { getPublishedPlatforms } from "@/lib/actions/platforms"
 import PlatformlarClient, { type CategoryGroup } from "./PlatformlarClient"
+import { getPageBySlug } from "@/lib/actions/seo"
+import { buildPageMetadata } from "@/lib/seo-metadata"
 import type { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Platformlar — E-Partnerim",
-  description: "Türkiye'nin önde gelen e-ticaret altyapılarını, entegrasyon araçlarını ve iş yazılımlarını tarafsız biçimde değerlendiriyoruz.",
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPageBySlug("/platformlar")
+  return buildPageMetadata(
+    page,
+    "Platformlar — E-Partnerim",
+    "Türkiye'nin önde gelen e-ticaret altyapılarını, entegrasyon araçlarını ve iş yazılımlarını tarafsız biçimde değerlendiriyoruz."
+  )
 }
 
 const CATEGORY_LABELS: Record<string, string> = {

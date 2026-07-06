@@ -2,11 +2,17 @@ import type { Metadata } from "next";
 import PageHero from "@/components/layout/PageHero";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import LeadContactForm from "./LeadContactForm";
+import { getPageBySlug } from "@/lib/actions/seo";
+import { buildPageMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "İletişim — E-Partnerim",
-  description: "E-Partnerim ile iletişime geçin. WhatsApp, telefon veya e-posta ile ulaşabilirsiniz.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPageBySlug("/iletisim");
+  return buildPageMetadata(
+    page,
+    "İletişim — E-Partnerim",
+    "E-Partnerim ile iletişime geçin. WhatsApp, telefon veya e-posta ile ulaşabilirsiniz."
+  );
+}
 
 const WHATSAPP_URL = "https://wa.me/905451416118";
 

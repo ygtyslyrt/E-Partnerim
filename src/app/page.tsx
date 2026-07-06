@@ -10,6 +10,9 @@ import CTASection from "@/components/sections/CTASection";
 import PlatformsPreview from "@/components/sections/PlatformsPreview";
 import SolutionsPreview from "@/components/sections/SolutionsPreview";
 import { getHomepageSections, type HomepageSection, type HomepageSections } from "@/lib/actions/homepage";
+import { getPageBySlug } from "@/lib/actions/seo";
+import { buildPageMetadata } from "@/lib/seo-metadata";
+import type { Metadata } from "next";
 
 function renderSection(section: HomepageSection, data: HomepageSections) {
   switch (section.sectionType) {
@@ -42,6 +45,15 @@ function renderSection(section: HomepageSection, data: HomepageSections) {
     default:
       return null;
   }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPageBySlug("/");
+  return buildPageMetadata(
+    page,
+    "E-Partnerim — E-Ticaretin Dijital Ortağı",
+    "50+ AI aracı ve uzman hizmetlerle KOBİ e-ticaret işletmenizi büyütün. Ücretsiz deneyin."
+  );
 }
 
 export default async function HomePage() {

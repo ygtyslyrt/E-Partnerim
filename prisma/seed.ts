@@ -52,6 +52,27 @@ async function main() {
   })
   console.log(`✅ Ana sayfa oluşturuldu: ${homepage.id}`)
 
+  // ─── 2b. Diğer yönetilebilir sayfalar (SEO amaçlı) ─────────────
+  const managedPages = [
+    { slug: "/blog", title: "Blog", seoTitle: "Blog — E-Partnerim", seoDesc: "E-ticaret, dijital pazarlama ve KOBİ büyüme stratejileri üzerine tarafsız içerikler." },
+    { slug: "/platformlar", title: "Platformlar", seoTitle: "Platformlar — E-Partnerim", seoDesc: "Türkiye'nin önde gelen e-ticaret altyapılarını, entegrasyon araçlarını ve iş yazılımlarını tarafsız biçimde değerlendiriyoruz." },
+    { slug: "/cozumler", title: "Çözümler", seoTitle: "Çözümler — E-Partnerim", seoDesc: "Hangi e-ticaret altyapısını seçmeli, dijital pazarlamayı nasıl yönetmeli? Ücretsiz rehberlik ve doğru partnere yönlendirme." },
+    { slug: "/partnerler", title: "Partnerler", seoTitle: "İş Ortaklarımız — E-Partnerim", seoDesc: "Doğrulanmış, uzman e-ticaret ajansları, danışmanlar ve hizmet sağlayıcıları." },
+    { slug: "/partnerix", title: "Partnerix", seoTitle: "Partnerix — E-Partnerim", seoDesc: "Yapay zeka destekli ihtiyaç analizi ile işletmeniz için en doğru dijital çözüm ortaklarını bulun." },
+    { slug: "/iletisim", title: "İletişim", seoTitle: "İletişim — E-Partnerim", seoDesc: "E-Partnerim ile iletişime geçin. WhatsApp, telefon veya e-posta ile ulaşabilirsiniz." },
+  ]
+  for (const p of managedPages) {
+    await prisma.page.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: {
+        slug: p.slug, title: p.title, type: PageType.STANDARD, status: Status.PUBLISHED,
+        publishedAt: new Date(), seoTitle: p.seoTitle, seoDesc: p.seoDesc, robots: "index,follow",
+      },
+    })
+  }
+  console.log("✅ Yönetilebilir sayfalar (Blog, Platformlar, Çözümler, Partnerler, Partnerix, İletişim) oluşturuldu")
+
   // ─── 3. Hero Bölümü ───────────────────────────────────────────
   const heroMeta = await prisma.pageSectionMeta.upsert({
     where: { pageId_sectionType: { pageId: homepage.id, sectionType: "hero" } },
@@ -411,6 +432,15 @@ async function main() {
     { key: "meta_pixel_id",   value: "",                        group: SettingsGroup.ANALYTICS, label: "Meta Pixel ID",        type: "text"  },
     { key: "gtm_id",          value: "",                        group: SettingsGroup.ANALYTICS, label: "GTM ID",               type: "text"  },
     { key: "search_console",  value: "",                        group: SettingsGroup.ANALYTICS, label: "Search Console Key",   type: "text"  },
+    { key: "seo_site_title",          value: "E-Partnerim — E-Ticaretin Dijital Ortağı", group: SettingsGroup.SEO, label: "Site Title",          type: "text"     },
+    { key: "seo_meta_description",    value: "50+ AI aracı ve uzman hizmetlerle KOBİ e-ticaret işletmenizi büyütün. Ücretsiz deneyin.", group: SettingsGroup.SEO, label: "Meta Description", type: "textarea" },
+    { key: "seo_meta_keywords",       value: "",                 group: SettingsGroup.SEO, label: "Meta Keywords",             type: "text"     },
+    { key: "seo_canonical_url",       value: "https://e-partnerim.com", group: SettingsGroup.SEO, label: "Canonical URL",      type: "url"      },
+    { key: "seo_robots",              value: "index,follow",     group: SettingsGroup.SEO, label: "Robots Meta",               type: "text"     },
+    { key: "seo_bing_verification",   value: "",                 group: SettingsGroup.SEO, label: "Bing Verification",         type: "text"     },
+    { key: "seo_yandex_verification", value: "",                 group: SettingsGroup.SEO, label: "Yandex Verification",       type: "text"     },
+    { key: "seo_json_ld_organization", value: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "E-Partnerim", url: "https://e-partnerim.com", logo: "https://e-partnerim.com/logo-icon.svg" }, null, 2), group: SettingsGroup.SEO, label: "JSON-LD Organization Schema", type: "textarea" },
+    { key: "seo_robots_txt",          value: "",                 group: SettingsGroup.SEO, label: "Robots.txt (özel içerik, boşsa otomatik oluşturulur)", type: "textarea" },
   ]
 
   for (const setting of defaultSettings) {

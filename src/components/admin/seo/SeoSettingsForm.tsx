@@ -11,33 +11,41 @@ interface Props {
 
 const GROUPS = [
   {
-    label: "Genel",
+    label: "Genel SEO",
     keys: [
-      { key: "site_name",    label: "Site Adı",  type: "text" },
-      { key: "site_tagline", label: "Slogan",     type: "text" },
-      { key: "site_url",     label: "Site URL",   type: "url"  },
+      { key: "seo_site_title", label: "Site Başlığı", type: "text" },
+      { key: "seo_meta_description", label: "Meta Açıklama", type: "textarea" },
+      { key: "seo_meta_keywords", label: "Anahtar Kelimeler", type: "text" },
+      { key: "seo_canonical_url", label: "Canonical URL", type: "url" },
+      { key: "seo_robots", label: "Varsayılan Robots Meta", type: "text" },
     ],
   },
   {
-    label: "İletişim",
+    label: "Arama Motoru Doğrulama",
     keys: [
-      { key: "email",    label: "E-posta",          type: "email" },
-      { key: "phone",    label: "Telefon",           type: "text"  },
-      { key: "whatsapp", label: "WhatsApp Numarası", type: "text"  },
-      { key: "address",  label: "Adres",             type: "text"  },
+      { key: "search_console", label: "Google Search Console Kodu", type: "text" },
+      { key: "seo_bing_verification", label: "Bing Doğrulama Kodu", type: "text" },
+      { key: "seo_yandex_verification", label: "Yandex Doğrulama Kodu", type: "text" },
     ],
   },
   {
-    label: "Sosyal Medya",
+    label: "Yapılandırılmış Veri & Robots.txt",
     keys: [
-      { key: "instagram", label: "Instagram URL", type: "url" },
-      { key: "linkedin",  label: "LinkedIn URL",  type: "url" },
-      { key: "twitter",   label: "Twitter/X URL", type: "url" },
+      { key: "seo_json_ld_organization", label: "JSON-LD Organization Schema", type: "textarea" },
+      { key: "seo_robots_txt", label: "Robots.txt (özel içerik, boşsa otomatik oluşturulur)", type: "textarea" },
     ],
   },
-]
+  {
+    label: "Analitik",
+    keys: [
+      { key: "ga_id", label: "Google Analytics ID (G-XXXXXX)", type: "text" },
+      { key: "meta_pixel_id", label: "Meta Pixel ID", type: "text" },
+      { key: "gtm_id", label: "Google Tag Manager ID", type: "text" },
+    ],
+  },
+] as const
 
-export default function SettingsForm({ initialSettings, action }: Props) {
+export default function SeoSettingsForm({ initialSettings, action }: Props) {
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,12 +89,21 @@ export default function SettingsForm({ initialSettings, action }: Props) {
             {group.keys.map(({ key, label, type }) => (
               <div key={key}>
                 <label className={labelCls}>{label}</label>
-                <input
-                  type={type}
-                  value={values[key] ?? ""}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  className={inputCls}
-                />
+                {type === "textarea" ? (
+                  <textarea
+                    value={values[key] ?? ""}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    rows={key.includes("json_ld") ? 6 : 3}
+                    className={`${inputCls} font-mono text-xs resize-y`}
+                  />
+                ) : (
+                  <input
+                    type={type}
+                    value={values[key] ?? ""}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    className={inputCls}
+                  />
+                )}
               </div>
             ))}
           </div>
