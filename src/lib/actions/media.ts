@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { supabaseAdmin, MEDIA_BUCKET } from "@/lib/supabase"
+import { getSupabaseAdmin, MEDIA_BUCKET } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import type { Prisma } from "@prisma/client"
@@ -243,7 +243,7 @@ export async function deleteMedia(ids: string[]): Promise<ActionResult> {
       .filter(Boolean)
       .map((u) => extractStoragePath(u!))
     )
-    if (paths.length) await supabaseAdmin.storage.from(MEDIA_BUCKET).remove(paths)
+    if (paths.length) await getSupabaseAdmin().storage.from(MEDIA_BUCKET).remove(paths)
     await prisma.media.deleteMany({ where: { id: { in: ids } } })
     revalidatePath("/panel/medya")
     return { success: true }

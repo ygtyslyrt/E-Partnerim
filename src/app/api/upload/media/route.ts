@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { supabaseAdmin, MEDIA_BUCKET } from "@/lib/supabase"
+import { getSupabaseAdmin, MEDIA_BUCKET } from "@/lib/supabase"
 import { prisma } from "@/lib/prisma"
 import sharp from "sharp"
 import type { Session } from "next-auth"
@@ -36,6 +36,7 @@ export const POST = auth(async function handler(req: AuthedReq) {
 
     if (!file) return NextResponse.json({ error: "Dosya bulunamadı" }, { status: 400 })
 
+    const supabaseAdmin = getSupabaseAdmin()
     const ext = getExtension(file.name)
     const isImage = IMAGE_TYPES.includes(file.type)
     const isSvg = file.type === "image/svg+xml"

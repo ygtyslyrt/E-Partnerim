@@ -1,19 +1,30 @@
-import { createClient } from "@supabase/supabase-js"
-
-const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-// Server-side istemci (Service Role — tüm izinler)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 // Public bucket adı
 export const MEDIA_BUCKET = "media"
+
+const globalForSupabase = globalThis as unknown as { supabaseAdmin?: SupabaseClient }
+
+// Next.js build zamanında (page data toplama aşamasında) bu modül import edilir;
+// client'ı üst seviyede oluşturmak env değişkenleri henüz yokken build'i çökertir.
+// Bu yüzden client yalnızca ilk gerçek kullanımda (request anında) oluşturulur.
+export function getSupabaseAdmin(): SupabaseClient {
+  if (globalForSupabase.supabaseAdmin) return globalForSupabase.supabaseAdmin
+
+  const supabaseUrl = process.env.SUPABASE_URL!
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const client = createClient(supabaseUrl, supabaseServiceKey)
+
+  globalForSupabase.supabaseAdmin = client
+  return client
+}
 
 export async function uploadToSupabase(
   buffer: Buffer,
   path: string,
   contentType: string
 ): Promise<string> {
+  const supabaseAdmin = getSupabaseAdmin()
   const { data, error } = await supabaseAdmin.storage
     .from(MEDIA_BUCKET)
     .upload(path, buffer, {
@@ -31,6 +42,7 @@ export async function uploadToSupabase(
 }
 
 export async function deleteFromSupabase(path: string): Promise<void> {
+  const supabaseAdmin = getSupabaseAdmin()
   const { error } = await supabaseAdmin.storage
     .from(MEDIA_BUCKET)
     .remove([path])

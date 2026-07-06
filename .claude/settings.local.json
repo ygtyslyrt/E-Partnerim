@@ -96,7 +96,17 @@
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./node_modules/@prisma/client/package.json'\\).exports, null, 2\\)\\)\")",
       "Bash(grep -n '^export.*Role\\\\|^export.*Status\\\\|^export.*PageType\\\\|^export.*SettingsGroup\\\\|^export.*NavLocation\\\\|$Enums' node_modules/.prisma/client/default.d.ts)",
       "Bash(rm -rf node_modules/.prisma)",
-      "Bash(ls node_modules/.prisma)"
+      "Bash(ls node_modules/.prisma)",
+      "Bash(npx vercel *)",
+      "Bash(gh --version)",
+      "Bash(ls -la .vercel)",
+      "Bash(cat .vercel/project.json)",
+      "Bash(node \"C:\\\\Users\\\\yyigi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Projeler-E-Partnerim\\\\54b92738-750b-4613-b797-ae9ed766702e\\\\scratchpad\\\\push-vercel-env.js\")",
+      "Bash(curl -s -o /dev/null -w \"https://e-partnerim.vercel.app -> %{http_code}\\\\n\" https://e-partnerim.vercel.app --max-time 15)",
+      "Bash(curl -s -o /dev/null -w \"/panel/seo -> %{http_code}\\\\n\" https://e-partnerim.vercel.app/panel/seo --max-time 15)",
+      "Bash(curl -s -o /dev/null -w \"/sitemap.xml -> %{http_code}\\\\n\" https://e-partnerim.vercel.app/sitemap.xml --max-time 15)",
+      "Bash(cp .env.local .env.local.bak)",
+      "Bash(sed -i 's/^SUPABASE_URL=.*/SUPABASE_URL=/; s/^SUPABASE_SERVICE_ROLE_KEY=.*/SUPABASE_SERVICE_ROLE_KEY=/' .env.local)"
     ]
   }
 }
