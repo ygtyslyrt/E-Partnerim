@@ -4,7 +4,11 @@ export type UserRole = "ADMIN" | "EDITOR" | "VIEWER"
 export type ContentStatus = "DRAFT" | "PUBLISHED" | "SCHEDULED" | "ARCHIVED"
 export type LeadStatusType = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" | "ON_HOLD"
 export type PriorityType = "LOW" | "MEDIUM" | "HIGH" | "URGENT"
-export type LeadSourceType = "PARTNERIX" | "CONTACT_FORM" | "CONSULTING" | "MANUAL" | "REFERRAL" | "SOCIAL" | "ORGANIC"
+export type LeadSourceType = "PARTNERIX" | "CONTACT_FORM" | "CONSULTING" | "MANUAL" | "REFERRAL" | "SOCIAL" | "ORGANIC" | "PARTNER_APPLICATION"
+export type ActivityTypeType =
+  | "CREATED" | "STATUS_CHANGED" | "NOTE_ADDED" | "EMAIL_SENT" | "CALL_MADE"
+  | "MEETING_SCHEDULED" | "FORM_SUBMITTED" | "PARTNERIX_COMPLETED" | "ASSIGNED"
+  | "TASK_CREATED" | "TASK_COMPLETED"
 export type FormStatusType = "UNREAD" | "READ" | "REPLIED" | "SPAM"
 
 // Sayfa bölüm tipleri (sectionType string değerleri)
@@ -122,6 +126,7 @@ export interface LeadKanbanColumn {
   status: LeadStatusType
   label: string
   color: string
+  dot: string
   leads: LeadCard[]
 }
 
@@ -134,8 +139,84 @@ export interface LeadCard {
   sector: string | null
   budget: string | null
   createdAt: Date
-  assignedTo: { name: string; avatar: string | null } | null
-  tags: Array<{ name: string; color: string }>
+  assignedTo: { id: string; name: string; avatar: string | null } | null
+  tags: Array<{ id: string; name: string; color: string }>
+}
+
+// Lead liste görünümü (tablo)
+export interface LeadListItem {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  company: string | null
+  status: LeadStatusType
+  priority: PriorityType
+  source: LeadSourceType
+  sector: string | null
+  nextFollowUp: Date | null
+  createdAt: Date
+  updatedAt: Date
+  assignedTo: { id: string; name: string; avatar: string | null } | null
+  tags: Array<{ id: string; name: string; color: string }>
+  openTaskCount: number
+}
+
+export interface AssignableUser {
+  id: string
+  name: string
+  email: string
+  avatar: string | null
+  role: UserRole
+}
+
+export interface LeadNoteView {
+  id: string
+  content: string
+  createdAt: Date
+  author: { id: string; name: string; avatar: string | null }
+}
+
+export interface LeadActivityView {
+  id: string
+  type: ActivityTypeType
+  title: string
+  detail: string | null
+  createdAt: Date
+}
+
+export interface LeadTaskView {
+  id: string
+  title: string
+  description: string | null
+  dueDate: Date | null
+  completed: boolean
+  completedAt: Date | null
+  createdAt: Date
+  assignedTo: { id: string; name: string; avatar: string | null } | null
+}
+
+export interface LeadDetail extends LeadListItem {
+  website: string | null
+  budget: string | null
+  timeline: string | null
+  services: unknown
+  notes: LeadNoteView[]
+  activities: LeadActivityView[]
+  tasks: LeadTaskView[]
+  contactForms: Array<{ id: string; message: string; createdAt: Date }>
+  consultingForms: Array<{ id: string; message: string | null; createdAt: Date }>
+  partnerixForms: Array<{ id: string; sector: string | null; budget: string | null; createdAt: Date }>
+}
+
+export interface LeadFilters {
+  search?: string
+  status?: LeadStatusType
+  priority?: PriorityType
+  source?: LeadSourceType
+  assignedToId?: string | "unassigned"
+  page?: number
+  pageSize?: number
 }
 
 // Navigasyon menü öğesi

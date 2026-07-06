@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import PartnerixCharacterVisual from "./PartnerixCharacterVisual";
@@ -10,10 +10,11 @@ import {
   BarChart2, Settings2, Package, TrendingUp, Rocket, Zap,
   Target, Layers, PlusCircle, CreditCard, DollarSign,
   Calendar, CalendarDays, Eye,
-  Check, ArrowRight, Lock, MessageCircle, CheckCircle2,
+  Check, ArrowRight, Lock, MessageCircle, CheckCircle2, User, Phone, Loader2,
 } from "lucide-react";
 import { getIcon } from "@/lib/icon-map";
 import type { PartnerixCharacterFull } from "@/lib/actions/partnerix-character";
+import { completePartnerixSession } from "@/lib/actions/partnerix";
 
 /* ─── Sabitler ─────────────────────────────────────────────────── */
 const PARTNERIX = "#4F46E5";
@@ -143,19 +144,26 @@ function SpeechBubbles({ welcomeMessage, style }: { welcomeMessage?: string; sty
 ──────────────────────────────────────────────────────────────── */
 interface CtaDef { label: string; href: string | null; color: string; hoverColor: string | null; icon: string | null }
 
+type ScenePhase = "questions" | "contact" | "done";
+
 function WizardCard({
-  step, pending, onSelect, onNext, completed, accentColor, gradientEnd, isDark, ctas,
+  step, pending, onSelect, onNext, phase, accentColor, gradientEnd, isDark, ctas,
+  name, phone, onNameChange, onPhoneChange, onSubmitContact, submitting, contactError,
 }: {
   step: number; pending: string | null;
-  onSelect: (id: string) => void; onNext: () => void; completed: boolean;
+  onSelect: (id: string) => void; onNext: () => void; phase: ScenePhase;
   accentColor: string; gradientEnd: string; isDark: boolean; ctas: CtaDef[];
+  name: string; phone: string;
+  onNameChange: (v: string) => void; onPhoneChange: (v: string) => void;
+  onSubmitContact: () => void; submitting: boolean; contactError: string | null;
 }) {
   const def   = STEPS[step];
   const total = STEPS.length;
-  const pct   = completed ? 100 : Math.round((step / total) * 100);
+  const pct   = phase === "questions" ? Math.round((step / total) * 100) : 100;
   const cardBg = isDark ? "#0F172A" : "#FFFFFF";
   const cardText = isDark ? "#F1F5F9" : "#0F172A";
   const cardBorder = isDark ? "#1E293B" : "#E4EBF5";
+  const inputBg = isDark ? "#1E293B" : "#FFFFFF";
   const effectiveCtas = ctas.length > 0 ? ctas : [{ label: "WhatsApp'ta Danışmanlık Al", href: WA_URL, color: DEVAM_BG, hoverColor: null, icon: "MessageCircle" }];
 
   return (
@@ -176,9 +184,9 @@ function WizardCard({
             <span className="text-[13.5px] font-bold" style={{ color: cardText }}>İhtiyaç Analiziniz</span>
             <span
               className="text-[12px] font-semibold tabular-nums"
-              style={{ color: completed ? "#059669" : accentColor }}
+              style={{ color: phase === "questions" ? accentColor : "#059669" }}
             >
-              {completed ? "Tamamlandı ✓" : `${step + 1} / ${total}`}
+              {phase === "questions" ? `${step + 1} / ${total}` : phase === "contact" ? "Son Adım" : "Tamamlandı ✓"}
             </span>
           </div>
           <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F5F9]">
@@ -192,7 +200,7 @@ function WizardCard({
         </div>
 
         {/* İçerik */}
-        {completed ? (
+        {phase === "done" ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -229,6 +237,40 @@ function WizardCard({
                 )
               })}
             </div>
+          </motion.div>
+        ) : phase === "contact" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-1 flex-col px-5 pt-4"
+          >
+            <p className="text-[12.5px] font-semibold leading-snug" style={{ color: cardText }}>
+              Harika! Sonuçlarınızı gönderebilmemiz için size nasıl ulaşabiliriz?
+            </p>
+            <div className="mt-3.5 space-y-2.5">
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                <input
+                  value={name}
+                  onChange={(e) => onNameChange(e.target.value)}
+                  placeholder="Adınız Soyadınız"
+                  className="w-full rounded-xl border border-[#E4E9F2] py-2.5 pl-10 pr-3.5 text-[13px] outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/10 transition"
+                  style={{ backgroundColor: inputBg, color: cardText }}
+                />
+              </div>
+              <div className="relative">
+                <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                <input
+                  value={phone}
+                  onChange={(e) => onPhoneChange(e.target.value)}
+                  placeholder="05xx xxx xx xx"
+                  className="w-full rounded-xl border border-[#E4E9F2] py-2.5 pl-10 pr-3.5 text-[13px] outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/10 transition"
+                  style={{ backgroundColor: inputBg, color: cardText }}
+                />
+              </div>
+              {contactError && <p className="text-[11px] text-red-500">{contactError}</p>}
+            </div>
+            <div className="flex-1" />
           </motion.div>
         ) : (
           <>
@@ -305,8 +347,8 @@ function WizardCard({
           </>
         )}
 
-        {/* Footer — Devam Et */}
-        {!completed && (
+        {/* Footer — Devam Et / Sonuçları Gör */}
+        {phase === "questions" && (
           <div className="flex-shrink-0 border-t border-[#F1F5F9] px-5 pb-4 pt-3">
             <button
               onClick={onNext}
@@ -320,6 +362,23 @@ function WizardCard({
             >
               {step === STEPS.length - 1 ? "Analizi Tamamla" : "Devam Et"}
               <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+            <div className="mt-2 flex items-center justify-center gap-1">
+              <Lock className="h-2.5 w-2.5 text-[#CBD5E1]" />
+              <span className="text-[9px] text-[#CBD5E1]">Bilgileriniz güvenli ve gizlidir.</span>
+            </div>
+          </div>
+        )}
+        {phase === "contact" && (
+          <div className="flex-shrink-0 border-t border-[#F1F5F9] px-5 pb-4 pt-3">
+            <button
+              onClick={onSubmitContact}
+              disabled={submitting || !name.trim() || !phone.trim()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold text-white transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed"
+              style={{ background: name.trim() && phone.trim() ? DEVAM_BG : "#CBD5E1" }}
+            >
+              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+              {submitting ? "Gönderiliyor..." : "Sonuçları Gör"}
             </button>
             <div className="mt-2 flex items-center justify-center gap-1">
               <Lock className="h-2.5 w-2.5 text-[#CBD5E1]" />
@@ -363,7 +422,12 @@ interface Props {
 export default function PartnerixScene({ welcomeMessage, character, isDesktop = true }: Props) {
   const [step,    setStep]    = useState(0);
   const [pending, setPending] = useState<string | null>(null);
-  const [done,    setDone]    = useState(false);
+  const [phase,   setPhase]   = useState<ScenePhase>("questions");
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [name,  setName]  = useState("");
+  const [phone, setPhone] = useState("");
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [isSubmitting, startTransition] = useTransition();
   const [isTalking, setIsTalking] = useState(true);
   const talkingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -376,9 +440,29 @@ export default function PartnerixScene({ welcomeMessage, character, isDesktop = 
 
   function handleNext() {
     if (!pending) return;
+    const label = STEPS[step].options.find((o) => o.id === pending)?.label ?? pending;
+    setAnswers((prev) => ({ ...prev, [step]: label }));
     setPending(null);
-    if (step === STEPS.length - 1) setDone(true);
+    if (step === STEPS.length - 1) setPhase("contact");
     else setStep((s) => s + 1);
+  }
+
+  function handleSubmitContact() {
+    if (!name.trim() || !phone.trim()) {
+      setContactError("Ad soyad ve telefon zorunludur");
+      return;
+    }
+    setContactError(null);
+    startTransition(async () => {
+      const result = await completePartnerixSession({
+        name, phone,
+        sector: answers[0], orderVolume: answers[1], support: answers[2],
+        platform: answers[3], budget: answers[4], timeline: answers[5],
+        answers,
+      });
+      if (result.success) setPhase("done");
+      else setContactError(result.error ?? "Bir şeyler ters gitti, tekrar deneyin");
+    });
   }
 
   const effectiveScale = (isDesktop ? character?.scale : character?.scaleMobile ?? character?.scale) ?? 1;
@@ -439,11 +523,18 @@ export default function PartnerixScene({ welcomeMessage, character, isDesktop = 
           pending={pending}
           onSelect={setPending}
           onNext={handleNext}
-          completed={done}
+          phase={phase}
           accentColor={visualStyle.color}
           gradientEnd={visualStyle.neonSecondary}
           isDark={(character?.theme ?? "light") === "dark"}
           ctas={ctas}
+          name={name}
+          phone={phone}
+          onNameChange={setName}
+          onPhoneChange={setPhone}
+          onSubmitContact={handleSubmitContact}
+          submitting={isSubmitting}
+          contactError={contactError}
         />
       </div>
     </motion.div>

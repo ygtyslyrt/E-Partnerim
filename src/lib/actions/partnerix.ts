@@ -3,7 +3,68 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
+import { findOrCreateLeadFromSubmission } from "@/lib/actions/leads"
 import type { ActionResult } from "@/types/cms"
+
+export interface PartnerixCompletionInput {
+  name: string
+  phone: string
+  email?: string
+  sector?: string
+  orderVolume?: string
+  support?: string
+  platform?: string
+  budget?: string
+  timeline?: string
+  answers?: Record<string, string>
+}
+
+// Herkese açık — ana sayfadaki Partnerix sohbeti tamamlandığında çağrılır
+export async function completePartnerixSession(input: PartnerixCompletionInput): Promise<ActionResult> {
+  if (!input.name?.trim() || !input.phone?.trim()) {
+    return { success: false, error: "İsim ve telefon zorunludur" }
+  }
+  try {
+    const flow = await prisma.partnerixFlow.findFirst({ orderBy: { createdAt: "asc" }, select: { id: true } })
+    if (!flow) return { success: false, error: "Partnerix akışı bulunamadı" }
+
+    const leadId = await findOrCreateLeadFromSubmission({
+      name: input.name, phone: input.phone, email: input.email,
+      sector: input.sector, budget: input.budget, timeline: input.timeline,
+      source: "PARTNERIX",
+      activityType: "PARTNERIX_COMPLETED",
+      activityTitle: "Partnerix sohbeti tamamlandı",
+      activityDetail: [input.sector, input.support, input.platform].filter(Boolean).join(" · ") || null,
+    })
+
+    const partnerixSession = await prisma.partnerixSession.create({
+      data: {
+        flowId: flow.id,
+        completedAt: new Date(),
+        answers: input.answers ?? undefined,
+        converted: true,
+        leadId,
+      },
+    })
+
+    await prisma.partnerixForm.create({
+      data: {
+        flowId: flow.id, sessionId: partnerixSession.id,
+        sector: input.sector ?? null, orderVolume: input.orderVolume ?? null,
+        support: input.support ?? null, platform: input.platform ?? null,
+        budget: input.budget ?? null, timeline: input.timeline ?? null,
+        name: input.name.trim(), email: input.email ?? null, phone: input.phone.trim(),
+        leadId,
+      },
+    })
+
+    revalidatePath("/panel/formlar")
+    revalidatePath("/panel/crm")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+}
 
 export async function getPartnerixFlow() {
   return prisma.partnerixFlow.findFirst({

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import PageHero from "@/components/layout/PageHero";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import LeadContactForm from "./LeadContactForm";
 
 export const metadata: Metadata = {
   title: "İletişim — E-Partnerim",
@@ -96,6 +97,11 @@ export default function IletisimPage() {
                 <div key={item.label}>{inner}</div>
               );
             })}
+          </div>
+
+          {/* Form */}
+          <div className="mx-auto mt-12 max-w-2xl">
+            <LeadContactForm />
           </div>
 
         </div>

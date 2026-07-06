@@ -112,6 +112,8 @@ enum ActivityType {
   FORM_SUBMITTED
   PARTNERIX_COMPLETED
   ASSIGNED
+  TASK_CREATED
+  TASK_COMPLETED
 }
 
 // ═══════════════════════════════════════════════════════
@@ -133,6 +135,7 @@ model User {
   revisions     Revision[]
   assignedLeads Lead[]       @relation("AssignedLeads")
   leadNotes     LeadNote[]
+  assignedTasks LeadTask[]   @relation("AssignedTasks")
   mediaUploads  Media[]
   reviewedPartnerApplications PartnerApplication[]
 }
@@ -1019,6 +1022,7 @@ model Lead {
   notes           LeadNote[]
   activities      LeadActivity[]
   tags            LeadTag[]
+  tasks           LeadTask[]
   partnerApplications PartnerApplication[]
 
   createdAt DateTime @default(now())
@@ -1051,6 +1055,25 @@ model LeadTag {
   lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
   name   String
   color  String @default("#6366F1")
+}
+
+// Görevler & hatırlatmalar — dueDate dolu olanlar hatırlatma olarak da listelenir
+model LeadTask {
+  id           String    @id @default(cuid())
+  leadId       String
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?   @db.Text
+  dueDate      DateTime?
+  completed    Boolean   @default(false)
+  completedAt  DateTime?
+  assignedToId String?
+  assignedTo   User?     @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([leadId])
+  @@index([dueDate])
 }
 
 // ═══════════════════════════════════════════════════════
