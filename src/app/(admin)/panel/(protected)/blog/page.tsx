@@ -1,6 +1,6 @@
 import { getBlogPosts, toggleBlogStatus, deleteBlogPost } from "@/lib/actions/blog"
 import Link from "next/link"
-import { PlusCircle, Pencil, Eye, EyeOff, Trash2, FileText } from "lucide-react"
+import { PlusCircle, Pencil, Eye, EyeOff, Trash2, FileText, Tags } from "lucide-react"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Blog" }
@@ -29,13 +29,22 @@ export default async function BlogPage({
           <h1 className="text-2xl font-bold text-slate-800">Blog</h1>
           <p className="mt-1 text-sm text-slate-500">{total} yazı</p>
         </div>
-        <Link
-          href="/panel/blog/yeni"
-          className="flex items-center gap-2 rounded-xl bg-[#3730A3] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#312E8A] transition"
-        >
-          <PlusCircle size={16} />
-          Yeni Yazı
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/panel/blog/kategoriler"
+            className="flex items-center gap-2 rounded-xl border border-[#E4EAF5] bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+          >
+            <Tags size={16} />
+            Kategoriler
+          </Link>
+          <Link
+            href="/panel/blog/yeni"
+            className="flex items-center gap-2 rounded-xl bg-[#3730A3] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#312E8A] transition"
+          >
+            <PlusCircle size={16} />
+            Yeni Yazı
+          </Link>
+        </div>
       </div>
 
       {/* Arama */}

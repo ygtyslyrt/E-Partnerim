@@ -142,7 +142,9 @@
       "Bash(rm -f /tmp/cookiejar_settings.txt)",
       "Bash(node -e \"console.log\\(process.platform, process.arch, process.version\\)\")",
       "Bash(node -e \"const sharp = require\\('sharp'\\); sharp\\({create:{width:10,height:10,channels:3,background:{r:255,g:0,b:0}}}\\).png\\(\\).toBuffer\\(\\).then\\(buf => console.log\\('sharp OK, buffer size:', buf.length\\)\\).catch\\(e => { console.error\\('sharp FAILED:', e.message\\); process.exit\\(1\\); }\\)\")",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(rm -rf \"D:\\\\Projeler\\\\E-Partnerim\\\\src\\\\app\\\\api\\\\qa-blogcat-tmp\")",
+      "Bash(rm -f /tmp/cookiejar_blogcat.txt)"
     ]
   }
 }

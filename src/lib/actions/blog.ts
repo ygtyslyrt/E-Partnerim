@@ -197,6 +197,80 @@ export async function getCategories() {
   return prisma.blogCategory.findMany({ orderBy: { name: "asc" } })
 }
 
+export async function getCategoriesWithCount() {
+  return prisma.blogCategory.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { posts: true } } },
+  })
+}
+
+export interface BlogCategoryInput {
+  name: string
+  slug: string
+  description?: string | null
+}
+
+export async function createCategory(data: BlogCategoryInput): Promise<ActionResult<BlogCategory>> {
+  const session = await auth()
+  if (!session?.user || session.user.role === "VIEWER") {
+    return { success: false, error: "Yetkisiz erişim" }
+  }
+  if (!data.name.trim() || !data.slug.trim()) {
+    return { success: false, error: "Ad ve slug zorunludur" }
+  }
+
+  try {
+    const category = await prisma.blogCategory.create({
+      data: { name: data.name.trim(), slug: data.slug.trim(), description: data.description?.trim() || null },
+    })
+    revalidatePath("/panel/blog/kategoriler")
+    revalidatePath("/blog")
+    return { success: true, data: category }
+  } catch (e) {
+    if ((e as { code?: string }).code === "P2002") return { success: false, error: "Bu slug zaten kullanımda" }
+    return { success: false, error: (e as Error).message }
+  }
+}
+
+export async function updateCategory(id: string, data: BlogCategoryInput): Promise<ActionResult<BlogCategory>> {
+  const session = await auth()
+  if (!session?.user || session.user.role === "VIEWER") {
+    return { success: false, error: "Yetkisiz erişim" }
+  }
+  if (!data.name.trim() || !data.slug.trim()) {
+    return { success: false, error: "Ad ve slug zorunludur" }
+  }
+
+  try {
+    const category = await prisma.blogCategory.update({
+      where: { id },
+      data: { name: data.name.trim(), slug: data.slug.trim(), description: data.description?.trim() || null },
+    })
+    revalidatePath("/panel/blog/kategoriler")
+    revalidatePath("/blog")
+    return { success: true, data: category }
+  } catch (e) {
+    if ((e as { code?: string }).code === "P2002") return { success: false, error: "Bu slug zaten kullanımda" }
+    return { success: false, error: (e as Error).message }
+  }
+}
+
+export async function deleteCategory(id: string): Promise<ActionResult> {
+  const session = await auth()
+  if (!session?.user || session.user.role !== "ADMIN") {
+    return { success: false, error: "Yetkisiz erişim" }
+  }
+
+  try {
+    await prisma.blogCategory.delete({ where: { id } })
+    revalidatePath("/panel/blog/kategoriler")
+    revalidatePath("/blog")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+}
+
 export async function redirectToBlogEdit(slug: string) {
   redirect(`/panel/blog/${slug}`)
 }
