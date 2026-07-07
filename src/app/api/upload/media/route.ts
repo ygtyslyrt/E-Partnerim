@@ -28,6 +28,9 @@ export const POST = auth(async function handler(req: AuthedReq) {
   if (!session?.user) {
     return NextResponse.json({ error: "Oturum bulunamadı — lütfen yeniden giriş yapın" }, { status: 401 })
   }
+  if (session.user.role === "VIEWER") {
+    return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 })
+  }
 
   try {
     const formData = await req.formData()

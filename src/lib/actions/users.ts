@@ -133,10 +133,10 @@ export async function deleteUser(id: string): Promise<ActionResult> {
   if (!check.ok) return { success: false, error: check.error }
   if (id === check.userId) return { success: false, error: "Kendinizi silemezsiniz" }
 
-  const user = await prisma.user.findUnique({ where: { id }, select: { role: true } })
-  if (user?.role === "ADMIN") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } })
-    if (adminCount <= 1) return { success: false, error: "Son admin silinemez" }
+  const user = await prisma.user.findUnique({ where: { id }, select: { role: true, active: true } })
+  if (user?.role === "ADMIN" && user.active) {
+    const activeAdminCount = await prisma.user.count({ where: { role: "ADMIN", active: true } })
+    if (activeAdminCount <= 1) return { success: false, error: "Son aktif admin silinemez" }
   }
 
   try {

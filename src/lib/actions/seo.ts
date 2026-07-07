@@ -16,6 +16,14 @@ function normalizePath(p: string) {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`
 }
 
+// proxy.ts, toPath'i `new URL(toPath, req.url)` ile çözümlüyor — "//host" veya "/\host"
+// gibi şema-göreli girdiler bu sayede harici bir adrese açık yönlendirmeye (open redirect)
+// dönüşebilir. Yönlendirme hedefi daima site içi bir yol olmalı.
+function isInternalPath(p: string) {
+  const normalized = p.replace(/\\/g, "/")
+  return normalized.startsWith("/") && !normalized.startsWith("//") && !normalized.includes("://")
+}
+
 // ── Sayfa bazlı SEO ─────────────────────────────────────────────────────────
 
 export async function getManagedPages(): Promise<Page[]> {
@@ -99,6 +107,7 @@ export async function createRedirect(data: RedirectInput): Promise<ActionResult>
   const fromPath = normalizePath(data.fromPath)
   const toPath = normalizePath(data.toPath)
   if (!fromPath || !toPath) return { success: false, error: "Kaynak ve hedef adres zorunludur" }
+  if (!isInternalPath(toPath)) return { success: false, error: "Hedef adres yalnızca site içi bir yol olabilir (harici URL'ye yönlendirme yapılamaz)" }
   if (fromPath === toPath) return { success: false, error: "Kaynak ve hedef adres aynı olamaz" }
 
   try {
@@ -120,6 +129,7 @@ export async function updateRedirect(id: string, data: RedirectInput): Promise<A
   const fromPath = normalizePath(data.fromPath)
   const toPath = normalizePath(data.toPath)
   if (!fromPath || !toPath) return { success: false, error: "Kaynak ve hedef adres zorunludur" }
+  if (!isInternalPath(toPath)) return { success: false, error: "Hedef adres yalnızca site içi bir yol olabilir (harici URL'ye yönlendirme yapılamaz)" }
   if (fromPath === toPath) return { success: false, error: "Kaynak ve hedef adres aynı olamaz" }
 
   try {

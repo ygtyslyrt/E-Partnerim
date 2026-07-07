@@ -142,7 +142,7 @@ export async function getAllFolders(): Promise<FolderItem[]> {
 
 export async function createFolder(name: string, parentId?: string | null): Promise<ActionResult<FolderItem>> {
   const session = await auth()
-  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  if (!session?.user || session.user.role === "VIEWER") return { success: false, error: "Yetkisiz erişim" }
   try {
     const folder = await prisma.mediaFolder.create({
       data: { name: name.trim(), parentId: parentId ?? null },
@@ -157,7 +157,7 @@ export async function createFolder(name: string, parentId?: string | null): Prom
 
 export async function renameFolder(id: string, name: string): Promise<ActionResult> {
   const session = await auth()
-  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  if (!session?.user || session.user.role === "VIEWER") return { success: false, error: "Yetkisiz erişim" }
   try {
     await prisma.mediaFolder.update({ where: { id }, data: { name: name.trim() } })
     revalidatePath("/panel/medya")
@@ -185,7 +185,7 @@ export async function updateMedia(
   data: { alt?: string | null; title?: string | null; description?: string | null; originalName?: string; isFavorite?: boolean }
 ): Promise<ActionResult<MediaItem>> {
   const session = await auth()
-  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  if (!session?.user || session.user.role === "VIEWER") return { success: false, error: "Yetkisiz erişim" }
   try {
     const updateData: Prisma.MediaUpdateInput = {
       alt: data.alt?.trim() || null,
@@ -205,7 +205,7 @@ export async function updateMedia(
 
 export async function toggleMediaFavorite(id: string): Promise<ActionResult<MediaItem>> {
   const session = await auth()
-  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  if (!session?.user || session.user.role === "VIEWER") return { success: false, error: "Yetkisiz erişim" }
   try {
     const current = await prisma.media.findUnique({ where: { id }, select: { isFavorite: true } })
     if (!current) return { success: false, error: "Dosya bulunamadı" }
@@ -224,7 +224,7 @@ export async function getMediaUsage(mediaId: string): Promise<MediaUsageItem[]> 
 
 export async function moveMediaToFolder(ids: string[], folderId: string | null): Promise<ActionResult> {
   const session = await auth()
-  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  if (!session?.user || session.user.role === "VIEWER") return { success: false, error: "Yetkisiz erişim" }
   try {
     await prisma.media.updateMany({ where: { id: { in: ids } }, data: { folderId } })
     revalidatePath("/panel/medya")
@@ -236,7 +236,7 @@ export async function moveMediaToFolder(ids: string[], folderId: string | null):
 
 export async function deleteMedia(ids: string[]): Promise<ActionResult> {
   const session = await auth()
-  if (!session?.user) return { success: false, error: "Yetkisiz erişim" }
+  if (!session?.user || session.user.role === "VIEWER") return { success: false, error: "Yetkisiz erişim" }
   try {
     const items = await prisma.media.findMany({ where: { id: { in: ids } }, select: { url: true, webpUrl: true, thumbnailUrl: true } })
     const paths = items.flatMap((item) => [item.url, item.webpUrl, item.thumbnailUrl]

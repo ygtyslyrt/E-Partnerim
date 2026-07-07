@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import { syncMediaUsage } from "@/lib/media-usage"
 import type { ActionResult } from "@/types/cms"
+import type { Prisma } from "@prisma/client"
+
+type Tx = Prisma.TransactionClient
 
 export async function getSocialProofContent() {
   const page = await prisma.page.findUnique({
@@ -50,39 +53,42 @@ export interface TestimonialInput {
   rating?: number | null
 }
 
-async function upsertLogos(sectionId: string, logos: SocialProofLogoInput[]) {
-  const existing = await prisma.socialProofLogo.findMany({ where: { sectionId }, select: { id: true } })
+async function upsertLogos(tx: Tx, sectionId: string, logos: SocialProofLogoInput[]) {
+  const existing = await tx.socialProofLogo.findMany({ where: { sectionId }, select: { id: true } })
   const existingIds = new Set(existing.map((l) => l.id))
   const keptIds = new Set(logos.filter((l) => l.id).map((l) => l.id!))
 
   const toDelete = [...existingIds].filter((id) => !keptIds.has(id))
   if (toDelete.length) {
-    await prisma.socialProofLogo.deleteMany({ where: { id: { in: toDelete } } })
-    await prisma.mediaUsage.deleteMany({ where: { entityType: "social-proof-logo", entityId: { in: toDelete } } })
+    await tx.socialProofLogo.deleteMany({ where: { id: { in: toDelete } } })
+    await tx.mediaUsage.deleteMany({ where: { entityType: "social-proof-logo", entityId: { in: toDelete } } })
   }
 
+  const rows: { id: string; name: string; logo: string | null }[] = []
   for (let i = 0; i < logos.length; i++) {
     const l = logos[i]
     const data = { name: l.name, logo: l.logo || null, color: l.color || null, url: l.url || null, order: i }
     const row =
       l.id && existingIds.has(l.id)
-        ? await prisma.socialProofLogo.update({ where: { id: l.id }, data })
-        : await prisma.socialProofLogo.create({ data: { ...data, sectionId } })
-    await syncMediaUsage("social-proof-logo", row.id, row.name, "/", { logo: row.logo })
+        ? await tx.socialProofLogo.update({ where: { id: l.id }, data })
+        : await tx.socialProofLogo.create({ data: { ...data, sectionId } })
+    rows.push(row)
   }
+  return rows
 }
 
-async function upsertTestimonials(sectionId: string, testimonials: TestimonialInput[]) {
-  const existing = await prisma.testimonial.findMany({ where: { sectionId }, select: { id: true } })
+async function upsertTestimonials(tx: Tx, sectionId: string, testimonials: TestimonialInput[]) {
+  const existing = await tx.testimonial.findMany({ where: { sectionId }, select: { id: true } })
   const existingIds = new Set(existing.map((t) => t.id))
   const keptIds = new Set(testimonials.filter((t) => t.id).map((t) => t.id!))
 
   const toDelete = [...existingIds].filter((id) => !keptIds.has(id))
   if (toDelete.length) {
-    await prisma.testimonial.deleteMany({ where: { id: { in: toDelete } } })
-    await prisma.mediaUsage.deleteMany({ where: { entityType: "testimonial", entityId: { in: toDelete } } })
+    await tx.testimonial.deleteMany({ where: { id: { in: toDelete } } })
+    await tx.mediaUsage.deleteMany({ where: { entityType: "testimonial", entityId: { in: toDelete } } })
   }
 
+  const rows: { id: string; name: string; avatar: string | null }[] = []
   for (let i = 0; i < testimonials.length; i++) {
     const t = testimonials[i]
     const data = {
@@ -91,10 +97,11 @@ async function upsertTestimonials(sectionId: string, testimonials: TestimonialIn
     }
     const row =
       t.id && existingIds.has(t.id)
-        ? await prisma.testimonial.update({ where: { id: t.id }, data })
-        : await prisma.testimonial.create({ data: { ...data, sectionId } })
-    await syncMediaUsage("testimonial", row.id, row.name, "/", { avatar: row.avatar })
+        ? await tx.testimonial.update({ where: { id: t.id }, data })
+        : await tx.testimonial.create({ data: { ...data, sectionId } })
+    rows.push(row)
   }
+  return rows
 }
 
 export async function updateSocialProofContent(data: {
@@ -119,20 +126,30 @@ export async function updateSocialProofContent(data: {
     const sectionId = page.sections[0]?.id
     if (!sectionId) return { success: false, error: "Referanslar bölümü bulunamadı" }
 
-    const content = await prisma.socialProofSectionContent.update({
-      where: { sectionId },
-      data: { title: data.title, subtitle: data.subtitle },
+    const { logoRows, testimonialRows } = await prisma.$transaction(async (tx) => {
+      const content = await tx.socialProofSectionContent.update({
+        where: { sectionId },
+        data: { title: data.title, subtitle: data.subtitle },
+      })
+
+      await tx.socialProofStat.deleteMany({ where: { sectionId: content.id } })
+      if (data.stats.length) {
+        await tx.socialProofStat.createMany({
+          data: data.stats.map((s, i) => ({ ...s, order: i, sectionId: content.id })),
+        })
+      }
+
+      const logoRows = await upsertLogos(tx, content.id, data.logos)
+      const testimonialRows = await upsertTestimonials(tx, content.id, data.testimonials)
+      return { logoRows, testimonialRows }
     })
 
-    await prisma.socialProofStat.deleteMany({ where: { sectionId: content.id } })
-    if (data.stats.length) {
-      await prisma.socialProofStat.createMany({
-        data: data.stats.map((s, i) => ({ ...s, order: i, sectionId: content.id })),
-      })
+    for (const row of logoRows) {
+      await syncMediaUsage("social-proof-logo", row.id, row.name, "/", { logo: row.logo })
     }
-
-    await upsertLogos(content.id, data.logos)
-    await upsertTestimonials(content.id, data.testimonials)
+    for (const row of testimonialRows) {
+      await syncMediaUsage("testimonial", row.id, row.name, "/", { avatar: row.avatar })
+    }
 
     revalidatePath("/")
     revalidatePath("/panel/icerik")

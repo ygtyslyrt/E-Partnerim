@@ -51,17 +51,19 @@ export async function updateServicesContent(data: {
     const sectionId = page.sections[0]?.id
     if (!sectionId) return { success: false, error: "Hizmetler bölümü bulunamadı" }
 
-    const content = await prisma.servicesSectionContent.update({
-      where: { sectionId },
-      data: { title: data.title, subtitle: data.subtitle, ctaLabel: data.ctaLabel, ctaUrl: data.ctaUrl },
-    })
-
-    await prisma.serviceItem.deleteMany({ where: { servicesId: content.id } })
-    if (data.items.length) {
-      await prisma.serviceItem.createMany({
-        data: data.items.map((item, i) => ({ ...item, order: i, servicesId: content.id })),
+    await prisma.$transaction(async (tx) => {
+      const content = await tx.servicesSectionContent.update({
+        where: { sectionId },
+        data: { title: data.title, subtitle: data.subtitle, ctaLabel: data.ctaLabel, ctaUrl: data.ctaUrl },
       })
-    }
+
+      await tx.serviceItem.deleteMany({ where: { servicesId: content.id } })
+      if (data.items.length) {
+        await tx.serviceItem.createMany({
+          data: data.items.map((item, i) => ({ ...item, order: i, servicesId: content.id })),
+        })
+      }
+    })
 
     revalidatePath("/")
     revalidatePath("/panel/icerik")

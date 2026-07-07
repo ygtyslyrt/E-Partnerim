@@ -50,26 +50,28 @@ export async function updateWhyUsContent(data: {
     const sectionId = page.sections[0]?.id
     if (!sectionId) return { success: false, error: "Neden Biz bölümü bulunamadı" }
 
-    const content = await prisma.whyUsSectionContent.update({
-      where: { sectionId },
-      data: {
-        title: data.title,
-        subtitle: data.subtitle,
-        description: data.description,
-        stat1Value: data.stat1Value,
-        stat1Label: data.stat1Label,
-        stat2Value: data.stat2Value,
-        stat2Label: data.stat2Label,
-        ctaLabel: data.ctaLabel,
-      },
-    })
-
-    await prisma.whyUsFeature.deleteMany({ where: { sectionId: content.id } })
-    if (data.features.length) {
-      await prisma.whyUsFeature.createMany({
-        data: data.features.map((f, i) => ({ ...f, order: i, sectionId: content.id })),
+    await prisma.$transaction(async (tx) => {
+      const content = await tx.whyUsSectionContent.update({
+        where: { sectionId },
+        data: {
+          title: data.title,
+          subtitle: data.subtitle,
+          description: data.description,
+          stat1Value: data.stat1Value,
+          stat1Label: data.stat1Label,
+          stat2Value: data.stat2Value,
+          stat2Label: data.stat2Label,
+          ctaLabel: data.ctaLabel,
+        },
       })
-    }
+
+      await tx.whyUsFeature.deleteMany({ where: { sectionId: content.id } })
+      if (data.features.length) {
+        await tx.whyUsFeature.createMany({
+          data: data.features.map((f, i) => ({ ...f, order: i, sectionId: content.id })),
+        })
+      }
+    })
 
     revalidatePath("/")
     revalidatePath("/panel/icerik")

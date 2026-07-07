@@ -46,17 +46,19 @@ export async function updateHowItWorksContent(data: {
     const sectionId = page.sections[0]?.id
     if (!sectionId) return { success: false, error: "Nasıl Çalışır bölümü bulunamadı" }
 
-    const content = await prisma.howItWorksSectionContent.update({
-      where: { sectionId },
-      data: { title: data.title, subtitle: data.subtitle },
-    })
-
-    await prisma.howItWorksStep.deleteMany({ where: { sectionId: content.id } })
-    if (data.steps.length) {
-      await prisma.howItWorksStep.createMany({
-        data: data.steps.map((step, i) => ({ ...step, order: i, sectionId: content.id })),
+    await prisma.$transaction(async (tx) => {
+      const content = await tx.howItWorksSectionContent.update({
+        where: { sectionId },
+        data: { title: data.title, subtitle: data.subtitle },
       })
-    }
+
+      await tx.howItWorksStep.deleteMany({ where: { sectionId: content.id } })
+      if (data.steps.length) {
+        await tx.howItWorksStep.createMany({
+          data: data.steps.map((step, i) => ({ ...step, order: i, sectionId: content.id })),
+        })
+      }
+    })
 
     revalidatePath("/")
     revalidatePath("/panel/icerik")
