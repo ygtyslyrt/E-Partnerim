@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import PageHero from "@/components/layout/PageHero";
 import CTASection from "@/components/sections/CTASection";
 import { Clock } from "lucide-react";
@@ -16,7 +17,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = await getBlogPost(slug);
-  if (!post) return { title: "Yazı Bulunamadı — E-Partnerim" };
+  if (!post || post.status !== "PUBLISHED") return { title: "Yazı Bulunamadı — E-Partnerim" };
   return {
     title: post.seoTitle || `${post.title} — E-Partnerim Blog`,
     description: post.seoDesc || post.excerpt || undefined,
@@ -31,7 +32,7 @@ function formatDate(d: Date | null) {
 export default async function BlogSlugPage({ params }: Props) {
   const { slug } = await params;
   const post = await getBlogPost(slug);
-  if (!post) notFound();
+  if (!post || post.status !== "PUBLISHED") notFound();
 
   const style = categoryStyle(post.category?.name ?? "Genel");
 
@@ -71,7 +72,7 @@ export default async function BlogSlugPage({ params }: Props) {
           )}
 
           <div className="space-y-4 text-[15px] leading-relaxed text-[#334155] [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-[#0F172A] [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-[#0F172A] [&_a]:text-[#00D084] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_p]:mt-4 [&_blockquote]:border-l-4 [&_blockquote]:border-[#00D084]/30 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-[#64748B] [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-900 [&_pre]:p-4 [&_pre_code]:bg-transparent [&_pre_code]:text-slate-100 [&_img]:rounded-xl [&_strong]:font-semibold [&_strong]:text-[#0F172A]">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>
               {post.content}
             </ReactMarkdown>
           </div>
