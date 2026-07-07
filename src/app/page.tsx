@@ -61,13 +61,13 @@ export default async function HomePage() {
 
   return (
     <>
-      <Header />
+      <Header settings={data.settings} />
       <main className="flex-1">
         {data.sections.map((section) => (
           <div key={section.id}>{renderSection(section, data)}</div>
         ))}
       </main>
-      <Footer />
+      <Footer settings={data.settings} />
     </>
   );
 }

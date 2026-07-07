@@ -424,10 +424,12 @@ async function main() {
     { key: "email",           value: "info@e-partnerim.com",   group: SettingsGroup.CONTACT,   label: "E-posta",              type: "email" },
     { key: "phone",           value: "+90 545 141 61 18",      group: SettingsGroup.CONTACT,   label: "Telefon",              type: "text"  },
     { key: "whatsapp",        value: "905451416118",           group: SettingsGroup.CONTACT,   label: "WhatsApp Numarası",    type: "text"  },
-    { key: "address",         value: "İstanbul, Türkiye",      group: SettingsGroup.CONTACT,   label: "Adres",                type: "text"  },
-    { key: "instagram",       value: "",                        group: SettingsGroup.SOCIAL,    label: "Instagram URL",        type: "url"   },
-    { key: "linkedin",        value: "",                        group: SettingsGroup.SOCIAL,    label: "LinkedIn URL",         type: "url"   },
+    { key: "address",         value: "Merkez Mah. Marmara Cad. Bekir Aşçı İş Merkezi No:10, Avcılar / İstanbul", group: SettingsGroup.CONTACT, label: "Adres", type: "text"  },
+    { key: "instagram",       value: "https://www.instagram.com/e.partnerim", group: SettingsGroup.SOCIAL, label: "Instagram URL",        type: "url"   },
+    { key: "linkedin",        value: "https://www.linkedin.com/company/e-partnerim", group: SettingsGroup.SOCIAL, label: "LinkedIn URL",  type: "url"   },
     { key: "twitter",         value: "",                        group: SettingsGroup.SOCIAL,    label: "Twitter/X URL",        type: "url"   },
+    { key: "facebook",        value: "https://www.facebook.com/epartnerim", group: SettingsGroup.SOCIAL, label: "Facebook URL",         type: "url"   },
+    { key: "tiktok",          value: "https://www.tiktok.com/@e.partnerim", group: SettingsGroup.SOCIAL, label: "TikTok URL",           type: "url"   },
     { key: "ga_id",           value: "",                        group: SettingsGroup.ANALYTICS, label: "Google Analytics ID",  type: "text"  },
     { key: "meta_pixel_id",   value: "",                        group: SettingsGroup.ANALYTICS, label: "Meta Pixel ID",        type: "text"  },
     { key: "gtm_id",          value: "",                        group: SettingsGroup.ANALYTICS, label: "GTM ID",               type: "text"  },
@@ -441,6 +443,7 @@ async function main() {
     { key: "seo_yandex_verification", value: "",                 group: SettingsGroup.SEO, label: "Yandex Verification",       type: "text"     },
     { key: "seo_json_ld_organization", value: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "E-Partnerim", url: "https://e-partnerim.com", logo: "https://e-partnerim.com/logo-icon.svg" }, null, 2), group: SettingsGroup.SEO, label: "JSON-LD Organization Schema", type: "textarea" },
     { key: "seo_robots_txt",          value: "",                 group: SettingsGroup.SEO, label: "Robots.txt (özel içerik, boşsa otomatik oluşturulur)", type: "textarea" },
+    { key: "footer_description", value: "İşletmenizin dijital yol arkadaşı. Türkiye'nin önde gelen e-ticaret altyapıları ile iş birliği yapıyoruz.", group: SettingsGroup.BRANDING, label: "Footer Açıklama Metni", type: "textarea" },
   ]
 
   for (const setting of defaultSettings) {

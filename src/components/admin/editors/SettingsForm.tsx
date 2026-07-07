@@ -33,6 +33,14 @@ const GROUPS = [
       { key: "instagram", label: "Instagram URL", type: "url" },
       { key: "linkedin",  label: "LinkedIn URL",  type: "url" },
       { key: "twitter",   label: "Twitter/X URL", type: "url" },
+      { key: "facebook",  label: "Facebook URL",  type: "url" },
+      { key: "tiktok",    label: "TikTok URL",    type: "url" },
+    ],
+  },
+  {
+    label: "Footer",
+    keys: [
+      { key: "footer_description", label: "Footer Açıklama Metni", type: "textarea" },
     ],
   },
 ]
@@ -81,12 +89,21 @@ export default function SettingsForm({ initialSettings, action }: Props) {
             {group.keys.map(({ key, label, type }) => (
               <div key={key}>
                 <label className={labelCls}>{label}</label>
-                <input
-                  type={type}
-                  value={values[key] ?? ""}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  className={inputCls}
-                />
+                {type === "textarea" ? (
+                  <textarea
+                    value={values[key] ?? ""}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    rows={3}
+                    className={`${inputCls} resize-none`}
+                  />
+                ) : (
+                  <input
+                    type={type}
+                    value={values[key] ?? ""}
+                    onChange={(e) => handleChange(key, e.target.value)}
+                    className={inputCls}
+                  />
+                )}
               </div>
             ))}
           </div>

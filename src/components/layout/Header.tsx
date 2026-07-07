@@ -13,7 +13,9 @@ const navLinks = [
   { href: "/iletisim", label: "İletişim" },
 ];
 
-const WHATSAPP_URL = "https://wa.me/905451416118";
+const DEFAULT_SETTINGS: Record<string, string> = {
+  whatsapp: "905451416118",
+};
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -23,8 +25,13 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-export default function Header() {
+interface Props {
+  settings?: Record<string, string>;
+}
+
+export default function Header({ settings = DEFAULT_SETTINGS }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const whatsappUrl = `https://wa.me/${settings.whatsapp || DEFAULT_SETTINGS.whatsapp}`;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#E8EEF0] bg-white/90 backdrop-blur-md">
@@ -65,7 +72,7 @@ export default function Header() {
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-2">
           <a
-            href={WHATSAPP_URL}
+            href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#00D084] px-5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(0,208,132,0.3)] transition-all hover:bg-[#00bb76] hover:shadow-[0_4px_18px_rgba(0,208,132,0.4)] active:scale-[0.98]"
@@ -100,7 +107,7 @@ export default function Header() {
           ))}
           <div className="pt-3 flex flex-col gap-2">
             <a
-              href={WHATSAPP_URL}
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-xl bg-[#00D084] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00bb76]"

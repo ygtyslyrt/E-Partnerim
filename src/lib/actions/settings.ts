@@ -24,6 +24,9 @@ export async function updateSiteSettings(data: Record<string, string>): Promise<
     )
     revalidatePath("/panel/ayarlar")
     revalidatePath("/")
+    // Header/Footer (public)/layout.tsx üzerinden tüm public sayfalarda paylaşılıyor —
+    // "layout" tipi, bu layout'u kullanan tüm rotaları (blog, platformlar, iletişim vb.) tazeler.
+    revalidatePath("/blog", "layout")
     return { success: true }
   } catch (e) {
     return { success: false, error: (e as Error).message }
