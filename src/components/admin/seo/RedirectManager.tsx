@@ -4,13 +4,15 @@ import { useState, useTransition } from "react"
 import { Plus, Pencil, Trash2, Loader2, Check, X } from "lucide-react"
 import type { Redirect } from "@prisma/client"
 import { createRedirect, updateRedirect, toggleRedirect, deleteRedirect, type RedirectInput } from "@/lib/actions/seo"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 const EMPTY: RedirectInput = { fromPath: "", toPath: "", type: 301, enabled: true }
 
-function RedirectRow({ redirect, onUpdate, onDelete }: {
+function RedirectRow({ redirect, onUpdate, onDelete, onError }: {
   redirect: Redirect
   onUpdate: (r: Redirect) => void
   onDelete: () => void
+  onError: (message: string) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
@@ -32,8 +34,15 @@ function RedirectRow({ redirect, onUpdate, onDelete }: {
   }
 
   function toggle() {
-    onUpdate({ ...redirect, enabled: !redirect.enabled })
-    startTransition(() => { toggleRedirect(redirect.id, redirect.enabled) })
+    const prevEnabled = redirect.enabled
+    onUpdate({ ...redirect, enabled: !prevEnabled })
+    startTransition(async () => {
+      const result = await toggleRedirect(redirect.id, prevEnabled)
+      if (!result.success) {
+        onUpdate({ ...redirect, enabled: prevEnabled })
+        onError(result.error ?? "Durum değiştirilemedi")
+      }
+    })
   }
 
   const inputCls = "w-full rounded-lg border border-[#E4EAF5] bg-[#F8FAFC] px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10 transition"
@@ -102,6 +111,7 @@ export default function RedirectManager({ initialRedirects }: { initialRedirects
   const [showAdd, setShowAdd] = useState(false)
   const [draft, setDraft] = useState<RedirectInput>(EMPTY)
   const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const inputCls = "w-full rounded-lg border border-[#E4EAF5] bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10 transition"
@@ -114,6 +124,7 @@ export default function RedirectManager({ initialRedirects }: { initialRedirects
         setRedirects((prev) => [{ id: crypto.randomUUID(), fromPath: draft.fromPath, toPath: draft.toPath, type: draft.type, enabled: draft.enabled ?? true, hitCount: 0, createdAt: new Date(), updatedAt: new Date() }, ...prev])
         setDraft(EMPTY)
         setShowAdd(false)
+        setToast({ message: "Yönlendirme eklendi", type: "success" })
       } else {
         setError(result.error ?? "Kayıt hatası")
       }
@@ -121,8 +132,15 @@ export default function RedirectManager({ initialRedirects }: { initialRedirects
   }
 
   async function handleDelete(id: string) {
+    const removed = redirects.find((r) => r.id === id)
     setRedirects((prev) => prev.filter((r) => r.id !== id))
-    await deleteRedirect(id)
+    const result = await deleteRedirect(id)
+    if (!result.success) {
+      if (removed) setRedirects((prev) => [removed, ...prev])
+      setToast({ message: result.error ?? "Yönlendirme silinemedi", type: "error" })
+    } else {
+      setToast({ message: "Yönlendirme silindi", type: "success" })
+    }
   }
 
   return (
@@ -176,12 +194,15 @@ export default function RedirectManager({ initialRedirects }: { initialRedirects
                   redirect={r}
                   onUpdate={(updated) => setRedirects((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
                   onDelete={() => handleDelete(r.id)}
+                  onError={(message) => setToast({ message, type: "error" })}
                 />
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

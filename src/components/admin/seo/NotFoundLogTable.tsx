@@ -4,21 +4,32 @@ import { useMemo, useState } from "react"
 import { CheckCheck, Trash2, RotateCcw } from "lucide-react"
 import type { NotFoundLog } from "@prisma/client"
 import { resolveNotFoundLog, deleteNotFoundLog } from "@/lib/actions/seo"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 export default function NotFoundLogTable({ initialLogs }: { initialLogs: NotFoundLog[] }) {
   const [logs, setLogs] = useState<NotFoundLog[]>(initialLogs)
   const [onlyUnresolved, setOnlyUnresolved] = useState(true)
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   const visible = useMemo(() => (onlyUnresolved ? logs.filter((l) => !l.resolved) : logs), [logs, onlyUnresolved])
 
   async function handleResolve(log: NotFoundLog) {
     setLogs((prev) => prev.map((l) => (l.id === log.id ? { ...l, resolved: !l.resolved } : l)))
-    await resolveNotFoundLog(log.id, !log.resolved)
+    const result = await resolveNotFoundLog(log.id, !log.resolved)
+    if (!result.success) {
+      setLogs((prev) => prev.map((l) => (l.id === log.id ? { ...l, resolved: log.resolved } : l)))
+      setToast({ message: result.error ?? "Durum güncellenemedi", type: "error" })
+    }
   }
 
   async function handleDelete(id: string) {
+    const removed = logs.find((l) => l.id === id)
     setLogs((prev) => prev.filter((l) => l.id !== id))
-    await deleteNotFoundLog(id)
+    const result = await deleteNotFoundLog(id)
+    if (!result.success) {
+      if (removed) setLogs((prev) => [...prev, removed])
+      setToast({ message: result.error ?? "Kayıt silinemedi", type: "error" })
+    }
   }
 
   return (
@@ -82,6 +93,8 @@ export default function NotFoundLogTable({ initialLogs }: { initialLogs: NotFoun
           </table>
         )}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

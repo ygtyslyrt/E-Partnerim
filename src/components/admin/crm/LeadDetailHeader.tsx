@@ -6,6 +6,7 @@ import { Trash2, Building2 } from "lucide-react"
 import { updateLeadStatus, updateLeadPriority, assignLead, deleteLead } from "@/lib/actions/leads"
 import { LEAD_STATUSES, PRIORITY_META, SOURCE_META, leadStatusMeta } from "@/lib/constants/crm"
 import { AssigneeAvatar } from "./LeadCardMini"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { LeadDetail, AssignableUser } from "@/types/cms"
 
 const SELECT = "rounded-xl border px-3 py-2 text-sm font-semibold outline-none focus:ring-2 transition cursor-pointer"
@@ -23,27 +24,54 @@ export default function LeadDetailHeader({
   const [assignedTo, setAssignedTo] = useState(lead.assignedTo)
   const [confirmDel, setConfirmDel] = useState(false)
   const [, startTransition] = useTransition()
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   const meta = leadStatusMeta(status)
 
   function handleStatus(v: string) {
+    const prev = status
     setStatus(v as typeof status)
-    startTransition(async () => { await updateLeadStatus(lead.id, v) })
+    startTransition(async () => {
+      const result = await updateLeadStatus(lead.id, v)
+      if (!result.success) {
+        setStatus(prev)
+        setToast({ message: result.error ?? "Durum güncellenemedi", type: "error" })
+      }
+    })
   }
 
   function handlePriority(v: string) {
+    const prev = priority
     setPriority(v as typeof priority)
-    startTransition(async () => { await updateLeadPriority(lead.id, v) })
+    startTransition(async () => {
+      const result = await updateLeadPriority(lead.id, v)
+      if (!result.success) {
+        setPriority(prev)
+        setToast({ message: result.error ?? "Öncelik güncellenemedi", type: "error" })
+      }
+    })
   }
 
   function handleAssign(userId: string) {
+    const prev = assignedTo
     setAssignedTo(users.find((u) => u.id === userId) ?? null)
-    startTransition(async () => { await assignLead(lead.id, userId || null) })
+    startTransition(async () => {
+      const result = await assignLead(lead.id, userId || null)
+      if (!result.success) {
+        setAssignedTo(prev)
+        setToast({ message: result.error ?? "Atama güncellenemedi", type: "error" })
+      }
+    })
   }
 
   async function handleDelete() {
-    await deleteLead(lead.id)
-    router.push("/panel/crm")
+    const result = await deleteLead(lead.id)
+    if (result.success) {
+      router.push("/panel/crm")
+    } else {
+      setConfirmDel(false)
+      setToast({ message: result.error ?? "Lead silinemedi", type: "error" })
+    }
   }
 
   return (
@@ -108,6 +136,8 @@ export default function LeadDetailHeader({
           </div>
         </div>
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

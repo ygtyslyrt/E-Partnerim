@@ -138,9 +138,14 @@ export default function PartnerForm({ initial, allPlatforms, allSolutions, onSav
 
   function handleDelete() {
     if (!onDelete) return
+    setError(null)
     startDeleteTransition(async () => {
-      await onDelete()
-      router.push("/panel/partnerler")
+      const result = await onDelete()
+      if (result.success) {
+        router.push("/panel/partnerler")
+      } else {
+        setError(result.error ?? "Silme hatası")
+      }
     })
   }
 

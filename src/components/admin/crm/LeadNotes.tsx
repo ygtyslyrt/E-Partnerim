@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { Send, Trash2, Loader2 } from "lucide-react"
 import { addLeadNote, deleteLeadNote } from "@/lib/actions/leads"
 import { AssigneeAvatar } from "./LeadCardMini"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { LeadNoteView } from "@/types/cms"
 
 function fmt(d: Date | string) {
@@ -21,6 +22,7 @@ export default function LeadNotes({
   const [notes, setNotes] = useState(initialNotes)
   const [content, setContent] = useState("")
   const [isPending, startTransition] = useTransition()
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   function handleAdd() {
     if (!content.trim()) return
@@ -34,13 +36,23 @@ export default function LeadNotes({
           { id: noteId, content: text, createdAt: new Date(), author: { id: currentUserId, name: "Siz", avatar: null } },
           ...prev,
         ])
+      } else {
+        setContent(text)
+        setToast({ message: result.error ?? "Not eklenemedi", type: "error" })
       }
     })
   }
 
   function handleDelete(id: string) {
+    const removed = notes.find((n) => n.id === id)
     setNotes((prev) => prev.filter((n) => n.id !== id))
-    startTransition(async () => { await deleteLeadNote(id, leadId) })
+    startTransition(async () => {
+      const result = await deleteLeadNote(id, leadId)
+      if (!result.success) {
+        if (removed) setNotes((prev) => [removed, ...prev])
+        setToast({ message: result.error ?? "Not silinemedi", type: "error" })
+      }
+    })
   }
 
   return (
@@ -84,6 +96,8 @@ export default function LeadNotes({
           </div>
         ))}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

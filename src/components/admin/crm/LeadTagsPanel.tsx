@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Plus, X } from "lucide-react"
 import { addLeadTag, removeLeadTag } from "@/lib/actions/leads"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { LeadDetail } from "@/types/cms"
 
 const COLORS = ["#6366F1", "#00D084", "#F59E0B", "#EF4444", "#0EA5E9", "#8B5CF6"]
@@ -13,6 +14,7 @@ export default function LeadTagsPanel({ leadId, initialTags }: { leadId: string;
   const [color, setColor] = useState(COLORS[0])
   const [showForm, setShowForm] = useState(false)
   const [, startTransition] = useTransition()
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   function handleAdd() {
     if (!name.trim()) return
@@ -23,13 +25,22 @@ export default function LeadTagsPanel({ leadId, initialTags }: { leadId: string;
       if (result.success && result.data) {
         const tagId = result.data.id
         setTags((prev) => [...prev, { id: tagId, name: label, color }])
+      } else {
+        setToast({ message: result.error ?? "Etiket eklenemedi", type: "error" })
       }
     })
   }
 
   function handleRemove(id: string) {
+    const removed = tags.find((t) => t.id === id)
     setTags((prev) => prev.filter((t) => t.id !== id))
-    startTransition(async () => { await removeLeadTag(id, leadId) })
+    startTransition(async () => {
+      const result = await removeLeadTag(id, leadId)
+      if (!result.success) {
+        if (removed) setTags((prev) => [...prev, removed])
+        setToast({ message: result.error ?? "Etiket kaldırılamadı", type: "error" })
+      }
+    })
   }
 
   return (
@@ -78,6 +89,8 @@ export default function LeadTagsPanel({ leadId, initialTags }: { leadId: string;
           </span>
         ))}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

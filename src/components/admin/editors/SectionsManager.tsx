@@ -7,6 +7,7 @@ import {
   Users, Grid3X3, Route, ShieldCheck, FileText, MousePointerClick,
 } from "lucide-react"
 import { reorderSections, toggleSectionVisibility } from "@/lib/actions/sections"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import HeroEditor from "./HeroEditor"
 import PlatformsSectionEditor from "./PlatformsSectionEditor"
 import SolutionsSectionEditor from "./SolutionsSectionEditor"
@@ -140,35 +141,46 @@ function SectionRowItem({
 export default function SectionsManager({ initialSections, contentMap, categories }: Props) {
   const [sections, setSections] = useState<SectionRow[]>(initialSections)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleReorder = useCallback((reordered: SectionRow[]) => {
     setSections(reordered)
     if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      reorderSections(reordered.map((s) => s.id))
+    saveTimer.current = setTimeout(async () => {
+      const result = await reorderSections(reordered.map((s) => s.id))
+      if (!result.success) setToast({ message: result.error ?? "Sıralama kaydedilemedi", type: "error" })
     }, 800)
   }, [])
 
   async function handleToggle(section: SectionRow) {
     const nextVisible = !section.visible
     setSections((prev) => prev.map((s) => (s.id === section.id ? { ...s, visible: nextVisible } : s)))
-    await toggleSectionVisibility(section.id, nextVisible)
+    const result = await toggleSectionVisibility(section.id, nextVisible)
+    if (!result.success) {
+      setSections((prev) => prev.map((s) => (s.id === section.id ? { ...s, visible: section.visible } : s)))
+      setToast({ message: result.error ?? "Görünürlük değiştirilemedi", type: "error" })
+    } else {
+      setToast({ message: nextVisible ? "Bölüm gösterildi" : "Bölüm gizlendi", type: "success" })
+    }
   }
 
   return (
-    <Reorder.Group axis="y" values={sections} onReorder={handleReorder} className="space-y-2">
-      {sections.map((section) => (
-        <SectionRowItem
-          key={section.id}
-          section={section}
-          content={contentMap[section.sectionType]}
-          categories={categories}
-          onToggle={() => handleToggle(section)}
-          expanded={expandedId === section.id}
-          onExpand={() => setExpandedId((id) => (id === section.id ? null : section.id))}
-        />
-      ))}
-    </Reorder.Group>
+    <>
+      <Reorder.Group axis="y" values={sections} onReorder={handleReorder} className="space-y-2">
+        {sections.map((section) => (
+          <SectionRowItem
+            key={section.id}
+            section={section}
+            content={contentMap[section.sectionType]}
+            categories={categories}
+            onToggle={() => handleToggle(section)}
+            expanded={expandedId === section.id}
+            onExpand={() => setExpandedId((id) => (id === section.id ? null : section.id))}
+          />
+        ))}
+      </Reorder.Group>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </>
   )
 }

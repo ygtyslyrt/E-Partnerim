@@ -6,6 +6,7 @@ import Link from "next/link"
 import { GripVertical, Pencil, Eye, EyeOff, Trash2, Star, ShieldCheck, PlusCircle, Inbox } from "lucide-react"
 import type { Partner } from "@prisma/client"
 import { reorderPartners, togglePartnerStatus, deletePartner } from "@/lib/actions/partners"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 function PartnerRow({ partner, onToggle, onDelete }: {
   partner: Partner
@@ -79,24 +80,40 @@ function PartnerRow({ partner, onToggle, onDelete }: {
 
 export default function PartnerList({ initialPartners, pendingCount = 0 }: { initialPartners: Partner[]; pendingCount?: number }) {
   const [partners, setPartners] = useState<Partner[]>(initialPartners)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleReorder = useCallback((reordered: Partner[]) => {
     setPartners(reordered)
     if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      reorderPartners(reordered.map((p) => p.id))
+    saveTimer.current = setTimeout(async () => {
+      const result = await reorderPartners(reordered.map((p) => p.id))
+      if (!result.success) setToast({ message: result.error ?? "Sıralama kaydedilemedi", type: "error" })
     }, 800)
   }, [])
 
   async function handleToggle(partner: Partner) {
-    setPartners((prev) => prev.map((p) => (p.id === partner.id ? { ...p, status: p.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" } : p)))
-    await togglePartnerStatus(partner.id, partner.status)
+    const nextStatus = partner.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED"
+    setPartners((prev) => prev.map((p) => (p.id === partner.id ? { ...p, status: nextStatus } : p)))
+    const result = await togglePartnerStatus(partner.id, partner.status)
+    if (!result.success) {
+      setPartners((prev) => prev.map((p) => (p.id === partner.id ? { ...p, status: partner.status } : p)))
+      setToast({ message: result.error ?? "Durum değiştirilemedi", type: "error" })
+    } else {
+      setToast({ message: nextStatus === "PUBLISHED" ? "Partner yayınlandı" : "Partner taslağa alındı", type: "success" })
+    }
   }
 
   async function handleDelete(id: string) {
+    const removed = partners.find((p) => p.id === id)
     setPartners((prev) => prev.filter((p) => p.id !== id))
-    await deletePartner(id)
+    const result = await deletePartner(id)
+    if (!result.success) {
+      if (removed) setPartners((prev) => [...prev, removed].sort((a, b) => a.order - b.order))
+      setToast({ message: result.error ?? "Partner silinemedi", type: "error" })
+    } else {
+      setToast({ message: "Partner silindi", type: "success" })
+    }
   }
 
   return (
@@ -133,6 +150,8 @@ export default function PartnerList({ initialPartners, pendingCount = 0 }: { ini
           ))}
         </Reorder.Group>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

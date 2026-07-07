@@ -6,6 +6,7 @@ import { ClipboardList, ChevronRight } from "lucide-react"
 import { updateLeadStatus, assignLead } from "@/lib/actions/leads"
 import { LEAD_STATUSES, PRIORITY_META, SOURCE_META, leadStatusMeta } from "@/lib/constants/crm"
 import { AssigneeAvatar } from "./LeadCardMini"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { LeadListItem, AssignableUser } from "@/types/cms"
 
 const SELECT_SM = "rounded-lg border border-transparent bg-transparent px-1.5 py-1 text-xs font-semibold outline-none hover:border-[#E4EAF5] focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10 transition cursor-pointer"
@@ -17,16 +18,31 @@ function fmtDate(d: Date | string) {
 export default function LeadsTable({ leads: initialLeads, users }: { leads: LeadListItem[]; users: AssignableUser[] }) {
   const [leads, setLeads] = useState(initialLeads)
   const [, startTransition] = useTransition()
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   function handleStatusChange(id: string, status: string) {
+    const prevLead = leads.find((l) => l.id === id)
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: status as LeadListItem["status"] } : l)))
-    startTransition(async () => { await updateLeadStatus(id, status) })
+    startTransition(async () => {
+      const result = await updateLeadStatus(id, status)
+      if (!result.success) {
+        if (prevLead) setLeads((prev) => prev.map((l) => (l.id === id ? prevLead : l)))
+        setToast({ message: result.error ?? "Durum güncellenemedi", type: "error" })
+      }
+    })
   }
 
   function handleAssignChange(id: string, userId: string) {
+    const prevLead = leads.find((l) => l.id === id)
     const user = users.find((u) => u.id === userId) ?? null
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, assignedTo: user } : l)))
-    startTransition(async () => { await assignLead(id, userId || null) })
+    startTransition(async () => {
+      const result = await assignLead(id, userId || null)
+      if (!result.success) {
+        if (prevLead) setLeads((prev) => prev.map((l) => (l.id === id ? prevLead : l)))
+        setToast({ message: result.error ?? "Atama güncellenemedi", type: "error" })
+      }
+    })
   }
 
   return (
@@ -138,6 +154,8 @@ export default function LeadsTable({ leads: initialLeads, users }: { leads: Lead
           <p className="text-sm text-slate-400">Sonuç bulunamadı.</p>
         </div>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

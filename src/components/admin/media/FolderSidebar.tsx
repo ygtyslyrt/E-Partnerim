@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Folder, FolderOpen, Plus, Pencil, Trash2, Check, X, ChevronRight, Image as ImageIcon } from "lucide-react"
 import { createFolder, renameFolder, deleteFolder } from "@/lib/actions/media"
 import type { FolderItem } from "@/lib/actions/media"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 interface Props {
   folders: FolderItem[]
@@ -22,6 +23,7 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   function handleDropOn(folderId: string | null) {
     return (e: React.DragEvent) => {
@@ -47,6 +49,8 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
       onFoldersChange([...folders, res.data])
       setNewName("")
       setCreating(false)
+    } else {
+      setToast({ message: res.error ?? "Klasör oluşturulamadı", type: "error" })
     }
   }
 
@@ -58,6 +62,8 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
     if (res.success) {
       onFoldersChange(folders.map((f) => (f.id === id ? { ...f, name: editName.trim() } : f)))
       setEditingId(null)
+    } else {
+      setToast({ message: res.error ?? "Klasör adı değiştirilemedi", type: "error" })
     }
   }
 
@@ -69,6 +75,8 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
       onFoldersChange(folders.filter((f) => f.id !== id))
       if (activeFolderId === id) onFolderSelect(null)
       setDeleteId(null)
+    } else {
+      setToast({ message: res.error ?? "Klasör silinemedi", type: "error" })
     }
   }
 
@@ -189,6 +197,8 @@ export default function FolderSidebar({ folders, activeFolderId, onFolderSelect,
           </div>
         </div>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

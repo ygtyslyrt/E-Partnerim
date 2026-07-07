@@ -5,6 +5,7 @@ import Link from "next/link"
 import { X, Copy, Check, Trash2, ExternalLink, FileText, File, Link2, Loader2 } from "lucide-react"
 import { updateMedia, getMediaUsage } from "@/lib/actions/media"
 import type { MediaItem, MediaUsageItem } from "@/lib/actions/media"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 interface Props {
   item: MediaItem
@@ -33,6 +34,7 @@ export default function MediaDetailPanel({ item, onUpdate, onDelete, onClose }: 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [usage, setUsage] = useState<MediaUsageItem[]>([])
   const [loadingUsage, setLoadingUsage] = useState(true)
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   const isImage = item.mimeType.startsWith("image/")
   const isSvg = item.mimeType === "image/svg+xml"
@@ -58,7 +60,12 @@ export default function MediaDetailPanel({ item, onUpdate, onDelete, onClose }: 
     setSaving(true)
     const res = await updateMedia(item.id, { alt, title, description: desc, originalName: filename })
     setSaving(false)
-    if (res.success && res.data) onUpdate(res.data)
+    if (res.success && res.data) {
+      onUpdate(res.data)
+      setToast({ message: "Kaydedildi", type: "success" })
+    } else {
+      setToast({ message: res.error ?? "Kayıt hatası", type: "error" })
+    }
   }
 
   async function copyUrl() {
@@ -217,6 +224,8 @@ export default function MediaDetailPanel({ item, onUpdate, onDelete, onClose }: 
           </button>
         )}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Plus, Trash2, Loader2, Clock, AlertTriangle } from "lucide-react"
 import { createLeadTask, toggleLeadTask, deleteLeadTask } from "@/lib/actions/leads"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { LeadTaskView, AssignableUser } from "@/types/cms"
 
 const INPUT = "rounded-lg border border-[#E4EAF5] bg-white px-3 py-2 text-sm outline-none focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10 transition"
@@ -28,6 +29,7 @@ export default function LeadTasksPanel({
   const [dueDate, setDueDate] = useState("")
   const [assignedToId, setAssignedToId] = useState("")
   const [isPending, startTransition] = useTransition()
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   const open = tasks.filter((t) => !t.completed)
   const done = tasks.filter((t) => t.completed)
@@ -35,12 +37,25 @@ export default function LeadTasksPanel({
   function handleToggle(task: LeadTaskView) {
     const completed = !task.completed
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, completed, completedAt: completed ? new Date() : null } : t)))
-    startTransition(async () => { await toggleLeadTask(task.id, leadId, completed) })
+    startTransition(async () => {
+      const result = await toggleLeadTask(task.id, leadId, completed)
+      if (!result.success) {
+        setTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
+        setToast({ message: result.error ?? "Görev güncellenemedi", type: "error" })
+      }
+    })
   }
 
   function handleDelete(id: string) {
+    const removed = tasks.find((t) => t.id === id)
     setTasks((prev) => prev.filter((t) => t.id !== id))
-    startTransition(async () => { await deleteLeadTask(id, leadId) })
+    startTransition(async () => {
+      const result = await deleteLeadTask(id, leadId)
+      if (!result.success) {
+        if (removed) setTasks((prev) => [...prev, removed])
+        setToast({ message: result.error ?? "Görev silinemedi", type: "error" })
+      }
+    })
   }
 
   function handleCreate() {
@@ -61,6 +76,8 @@ export default function LeadTasksPanel({
           ...prev,
         ])
         setTitle(""); setDueDate(""); setAssignedToId(""); setShowForm(false)
+      } else {
+        setToast({ message: result.error ?? "Görev oluşturulamadı", type: "error" })
       }
     })
   }
@@ -138,6 +155,8 @@ export default function LeadTasksPanel({
           </div>
         )}
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

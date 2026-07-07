@@ -119,9 +119,14 @@ export default function SolutionForm({ initial, onSave, onDelete }: Props) {
 
   function handleDelete() {
     if (!onDelete) return
+    setError(null)
     startDeleteTransition(async () => {
-      await onDelete()
-      router.push("/panel/cozumler")
+      const result = await onDelete()
+      if (result.success) {
+        router.push("/panel/cozumler")
+      } else {
+        setError(result.error ?? "Silme hatası")
+      }
     })
   }
 

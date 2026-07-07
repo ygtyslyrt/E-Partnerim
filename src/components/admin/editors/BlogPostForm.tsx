@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Loader2, Save, Eye } from "lucide-react"
 import MediaPickerButton from "@/components/admin/media/MediaPickerButton"
 import SeoPanel, { type SeoData } from "@/components/admin/shared/SeoPanel"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { BlogCategory } from "@prisma/client"
 import type { ActionResult } from "@/types/cms"
 
@@ -39,6 +40,7 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const [title, setTitle] = useState(initialData?.title ?? "")
   const [slug, setSlug] = useState(initialData?.slug ?? "")
   const [slugManual, setSlugManual] = useState(!!initialData?.slug)
@@ -82,7 +84,10 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
 
       const result = await action(formData)
       if (result.success && result.data) {
-        router.push(`/panel/blog/${result.data.slug}`)
+        setToast({ message: initialData?.id ? "Yazı güncellendi" : "Yazı oluşturuldu", type: "success" })
+        if (!initialData?.id) {
+          setTimeout(() => router.push(`/panel/blog/${result.data!.slug}`), 500)
+        }
       } else {
         setError(result.error ?? "Kayıt hatası")
       }
@@ -194,6 +199,8 @@ export default function BlogPostForm({ categories, action, initialData }: Props)
           Yayınla
         </button>
       </div>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

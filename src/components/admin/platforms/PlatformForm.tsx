@@ -126,9 +126,14 @@ export default function PlatformForm({ initial, onSave, onDelete }: Props) {
 
   function handleDelete() {
     if (!onDelete) return
+    setError(null)
     startDeleteTransition(async () => {
-      await onDelete()
-      router.push("/panel/platformlar")
+      const result = await onDelete()
+      if (result.success) {
+        router.push("/panel/platformlar")
+      } else {
+        setError(result.error ?? "Silme hatası")
+      }
     })
   }
 

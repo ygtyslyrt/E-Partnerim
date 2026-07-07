@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ChevronDown, Check, X, Loader2 } from "lucide-react"
 import { approvePartnerApplication, rejectPartnerApplication } from "@/lib/actions/partner-applications"
 import type { PartnerApplication } from "@prisma/client"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 const TABS = [
   { value: "PENDING", label: "Bekleyen" },
@@ -26,6 +27,7 @@ export default function ApplicationsQueue({ initialApplications }: { initialAppl
   const [isPending, startTransition] = useTransition()
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [note, setNote] = useState("")
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   const filtered = applications.filter((a) => a.status === tab)
 
@@ -34,7 +36,10 @@ export default function ApplicationsQueue({ initialApplications }: { initialAppl
       const result = await approvePartnerApplication(id)
       if (result.success) {
         setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: "APPROVED" } : a)))
+        setToast({ message: "Başvuru onaylandı, partner oluşturuldu", type: "success" })
         if (result.data?.slug) router.push(`/panel/partnerler/${result.data.slug}`)
+      } else {
+        setToast({ message: result.error ?? "Onaylanamadı", type: "error" })
       }
     })
   }
@@ -46,6 +51,9 @@ export default function ApplicationsQueue({ initialApplications }: { initialAppl
         setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, status: "REJECTED", reviewNote: note || null } : a)))
         setRejectingId(null)
         setNote("")
+        setToast({ message: "Başvuru reddedildi", type: "success" })
+      } else {
+        setToast({ message: result.error ?? "Reddedilemedi", type: "error" })
       }
     })
   }
@@ -135,6 +143,8 @@ export default function ApplicationsQueue({ initialApplications }: { initialAppl
           ))}
         </div>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { GripVertical, Pencil, Eye, EyeOff, Trash2, Star, PlusCircle } from "lucide-react"
 import type { Platform } from "@prisma/client"
 import { reorderPlatforms, togglePlatformStatus, deletePlatform } from "@/lib/actions/platforms"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 function PlatformRow({ platform, onToggle, onDelete }: {
   platform: Platform
@@ -124,30 +125,40 @@ function PlatformRow({ platform, onToggle, onDelete }: {
 
 export default function PlatformList({ initialPlatforms }: { initialPlatforms: Platform[] }) {
   const [platforms, setPlatforms] = useState<Platform[]>(initialPlatforms)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleReorder = useCallback((reordered: Platform[]) => {
     setPlatforms(reordered)
     if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      reorderPlatforms(reordered.map((p) => p.id))
+    saveTimer.current = setTimeout(async () => {
+      const result = await reorderPlatforms(reordered.map((p) => p.id))
+      if (!result.success) setToast({ message: result.error ?? "Sıralama kaydedilemedi", type: "error" })
     }, 800)
   }, [])
 
   async function handleToggle(platform: Platform) {
-    setPlatforms((prev) =>
-      prev.map((p) =>
-        p.id === platform.id
-          ? { ...p, status: p.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" }
-          : p
-      )
-    )
-    await togglePlatformStatus(platform.id, platform.status)
+    const nextStatus = platform.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED"
+    setPlatforms((prev) => prev.map((p) => (p.id === platform.id ? { ...p, status: nextStatus } : p)))
+    const result = await togglePlatformStatus(platform.id, platform.status)
+    if (!result.success) {
+      setPlatforms((prev) => prev.map((p) => (p.id === platform.id ? { ...p, status: platform.status } : p)))
+      setToast({ message: result.error ?? "Durum değiştirilemedi", type: "error" })
+    } else {
+      setToast({ message: nextStatus === "PUBLISHED" ? "Platform yayınlandı" : "Platform taslağa alındı", type: "success" })
+    }
   }
 
   async function handleDelete(id: string) {
+    const removed = platforms.find((p) => p.id === id)
     setPlatforms((prev) => prev.filter((p) => p.id !== id))
-    await deletePlatform(id)
+    const result = await deletePlatform(id)
+    if (!result.success) {
+      if (removed) setPlatforms((prev) => [...prev, removed].sort((a, b) => a.order - b.order))
+      setToast({ message: result.error ?? "Platform silinemedi", type: "error" })
+    } else {
+      setToast({ message: "Platform silindi", type: "success" })
+    }
   }
 
   return (
@@ -190,6 +201,8 @@ export default function PlatformList({ initialPlatforms }: { initialPlatforms: P
           ))}
         </Reorder.Group>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

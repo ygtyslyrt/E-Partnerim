@@ -1,16 +1,10 @@
-import { getBlogPosts, toggleBlogStatus, deleteBlogPost } from "@/lib/actions/blog"
+import { getBlogPosts } from "@/lib/actions/blog"
 import Link from "next/link"
-import { PlusCircle, Pencil, Eye, EyeOff, Trash2, FileText, Tags } from "lucide-react"
+import { PlusCircle, FileText, Tags } from "lucide-react"
+import BlogList from "@/components/admin/editors/BlogList"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Blog" }
-
-const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  PUBLISHED: { label: "Yayında",   cls: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-  DRAFT:     { label: "Taslak",    cls: "bg-slate-50  text-slate-600  border-slate-200"    },
-  SCHEDULED: { label: "Zamanlandı",cls: "bg-amber-50  text-amber-700  border-amber-100"    },
-  ARCHIVED:  { label: "Arşiv",     cls: "bg-rose-50   text-rose-700   border-rose-100"     },
-}
 
 export default async function BlogPage({
   searchParams,
@@ -66,83 +60,12 @@ export default async function BlogPage({
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[#E4EAF5] bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#E4EAF5] bg-[#F8FAFC]">
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Başlık</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Durum</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Yazar</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Tarih</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F1F5F9]">
-              {posts.map((post) => {
-                const badge = STATUS_LABEL[post.status] ?? STATUS_LABEL.DRAFT
-                return (
-                  <tr key={post.id} className="hover:bg-[#F8FAFC] transition-colors">
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-slate-800">{post.title}</span>
-                      <span className="ml-2 text-xs text-slate-400">/{post.slug}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${badge.cls}`}>
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">{post.author.name}</td>
-                    <td className="px-4 py-3 text-slate-400">
-                      {new Date(post.createdAt).toLocaleDateString("tr-TR")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link
-                          href={`/panel/blog/${post.slug}`}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                          title="Düzenle"
-                        >
-                          <Pencil size={15} />
-                        </Link>
-                        <form
-                          action={async () => {
-                            "use server"
-                            await toggleBlogStatus(post.id, post.status)
-                          }}
-                        >
-                          <button
-                            type="submit"
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                            title={post.status === "PUBLISHED" ? "Taslağa al" : "Yayınla"}
-                          >
-                            {post.status === "PUBLISHED" ? <EyeOff size={15} /> : <Eye size={15} />}
-                          </button>
-                        </form>
-                        <form
-                          action={async () => {
-                            "use server"
-                            await deleteBlogPost(post.id)
-                          }}
-                        >
-                          <button
-                            type="submit"
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
-                            title="Sil"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          <BlogList initialPosts={posts} />
 
           {/* Sayfalama */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-[#E4EAF5] px-4 py-3">
+            <div className="flex items-center justify-between rounded-2xl border border-[#E4EAF5] bg-white px-4 py-3">
               <span className="text-xs text-slate-400">Sayfa {page} / {totalPages}</span>
               <div className="flex gap-2">
                 {page > 1 && (

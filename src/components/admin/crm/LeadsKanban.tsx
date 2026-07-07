@@ -3,12 +3,14 @@
 import { useState, useTransition } from "react"
 import { updateLeadStatus } from "@/lib/actions/leads"
 import LeadCardMini from "./LeadCardMini"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { LeadKanbanColumn, LeadStatusType } from "@/types/cms"
 
 export default function LeadsKanban({ columns: initialColumns }: { columns: LeadKanbanColumn[] }) {
   const [columns, setColumns] = useState(initialColumns)
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatusType | null>(null)
   const [, startTransition] = useTransition()
+  const [toast, setToast] = useState<ToastState | null>(null)
 
   function handleDrop(e: React.DragEvent, targetStatus: LeadStatusType) {
     e.preventDefault()
@@ -19,17 +21,28 @@ export default function LeadsKanban({ columns: initialColumns }: { columns: Lead
     const sourceCol = columns.find((col) => col.leads.some((l) => l.id === draggedId))
     if (!sourceCol || sourceCol.status === targetStatus) return
     const moved = sourceCol.leads.find((l) => l.id === draggedId)!
+    const sourceStatus = sourceCol.status
 
     setColumns((prev) =>
       prev.map((col) => {
-        if (col.status === sourceCol.status) return { ...col, leads: col.leads.filter((l) => l.id !== draggedId) }
+        if (col.status === sourceStatus) return { ...col, leads: col.leads.filter((l) => l.id !== draggedId) }
         if (col.status === targetStatus) return { ...col, leads: [moved, ...col.leads] }
         return col
       })
     )
 
     startTransition(async () => {
-      await updateLeadStatus(draggedId, targetStatus)
+      const result = await updateLeadStatus(draggedId, targetStatus)
+      if (!result.success) {
+        setColumns((prev) =>
+          prev.map((col) => {
+            if (col.status === targetStatus) return { ...col, leads: col.leads.filter((l) => l.id !== draggedId) }
+            if (col.status === sourceStatus) return { ...col, leads: [moved, ...col.leads] }
+            return col
+          })
+        )
+        setToast({ message: result.error ?? "Durum güncellenemedi", type: "error" })
+      }
     })
   }
 
@@ -73,6 +86,8 @@ export default function LeadsKanban({ columns: initialColumns }: { columns: Lead
           </div>
         </div>
       ))}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

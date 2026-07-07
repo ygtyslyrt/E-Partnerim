@@ -7,6 +7,7 @@ import MediaCard from "./MediaCard"
 import MediaListRow from "./MediaListRow"
 import FolderSidebar from "./FolderSidebar"
 import MediaDetailPanel from "./MediaDetailPanel"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 import type { MediaItem, FolderItem, MediaSortBy } from "@/lib/actions/media"
 
 const MIME_FILTERS = [
@@ -53,6 +54,7 @@ export default function MediaLibrary({ initialFolders }: Props) {
   const [draggingOver, setDraggingOver] = useState(false)
   const [deletingSelected, setDeletingSelected] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -105,6 +107,8 @@ export default function MediaLibrary({ initialFolders }: Props) {
     if (res.success && res.data) {
       setFiles((prev) => prev.map((f) => (f.id === id ? res.data! : f)))
       if (activeFile?.id === id) setActiveFile(res.data)
+    } else {
+      setToast({ message: res.error ?? "Favori güncellenemedi", type: "error" })
     }
   }
 
@@ -131,7 +135,10 @@ export default function MediaLibrary({ initialFolders }: Props) {
       setFiles((prev) => prev.filter((f) => f.id !== id))
       setTotalFiles((t) => t - 1)
       setActiveFile(null)
+      setToast({ message: "Dosya silindi", type: "success" })
       await reloadFolderCounts()
+    } else {
+      setToast({ message: res.error ?? "Dosya silinemedi", type: "error" })
     }
   }
 
@@ -145,7 +152,10 @@ export default function MediaLibrary({ initialFolders }: Props) {
       setTotalFiles((t) => t - ids.length)
       setSelectedIds(new Set())
       if (activeFile && selectedIds.has(activeFile.id)) setActiveFile(null)
+      setToast({ message: `${ids.length} dosya silindi`, type: "success" })
       await reloadFolderCounts()
+    } else {
+      setToast({ message: res.error ?? "Dosyalar silinemedi", type: "error" })
     }
   }
 
@@ -157,7 +167,10 @@ export default function MediaLibrary({ initialFolders }: Props) {
       setTotalFiles((t) => t - ids.length)
       setSelectedIds(new Set())
       setMoveTarget(null)
+      setToast({ message: "Dosyalar taşındı", type: "success" })
       await reloadFolderCounts()
+    } else {
+      setToast({ message: res.error ?? "Dosyalar taşınamadı", type: "error" })
     }
   }
 
@@ -179,7 +192,10 @@ export default function MediaLibrary({ initialFolders }: Props) {
         return next
       })
       if (activeFile && ids.includes(activeFile.id)) setActiveFile(null)
+      setToast({ message: "Dosyalar taşındı", type: "success" })
       await reloadFolderCounts()
+    } else {
+      setToast({ message: res.error ?? "Dosyalar taşınamadı", type: "error" })
     }
   }
 
@@ -502,6 +518,8 @@ export default function MediaLibrary({ initialFolders }: Props) {
         onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = "" }}
         className="hidden"
       />
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }

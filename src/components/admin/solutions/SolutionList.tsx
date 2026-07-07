@@ -6,6 +6,7 @@ import Link from "next/link"
 import { GripVertical, Pencil, Eye, EyeOff, Trash2, Star, PlusCircle } from "lucide-react"
 import type { Solution } from "@prisma/client"
 import { reorderSolutions, toggleSolutionStatus, deleteSolution } from "@/lib/actions/solutions"
+import Toast, { type ToastState } from "@/components/admin/shared/Toast"
 
 function SolutionRow({ solution, onToggle, onDelete }: {
   solution: Solution
@@ -107,30 +108,40 @@ function SolutionRow({ solution, onToggle, onDelete }: {
 
 export default function SolutionList({ initialSolutions }: { initialSolutions: Solution[] }) {
   const [solutions, setSolutions] = useState<Solution[]>(initialSolutions)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleReorder = useCallback((reordered: Solution[]) => {
     setSolutions(reordered)
     if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      reorderSolutions(reordered.map((s) => s.id))
+    saveTimer.current = setTimeout(async () => {
+      const result = await reorderSolutions(reordered.map((s) => s.id))
+      if (!result.success) setToast({ message: result.error ?? "Sıralama kaydedilemedi", type: "error" })
     }, 800)
   }, [])
 
   async function handleToggle(solution: Solution) {
-    setSolutions((prev) =>
-      prev.map((s) =>
-        s.id === solution.id
-          ? { ...s, status: s.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" }
-          : s
-      )
-    )
-    await toggleSolutionStatus(solution.id, solution.status)
+    const nextStatus = solution.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED"
+    setSolutions((prev) => prev.map((s) => (s.id === solution.id ? { ...s, status: nextStatus } : s)))
+    const result = await toggleSolutionStatus(solution.id, solution.status)
+    if (!result.success) {
+      setSolutions((prev) => prev.map((s) => (s.id === solution.id ? { ...s, status: solution.status } : s)))
+      setToast({ message: result.error ?? "Durum değiştirilemedi", type: "error" })
+    } else {
+      setToast({ message: nextStatus === "PUBLISHED" ? "Çözüm yayınlandı" : "Çözüm taslağa alındı", type: "success" })
+    }
   }
 
   async function handleDelete(id: string) {
+    const removed = solutions.find((s) => s.id === id)
     setSolutions((prev) => prev.filter((s) => s.id !== id))
-    await deleteSolution(id)
+    const result = await deleteSolution(id)
+    if (!result.success) {
+      if (removed) setSolutions((prev) => [...prev, removed].sort((a, b) => a.order - b.order))
+      setToast({ message: result.error ?? "Çözüm silinemedi", type: "error" })
+    } else {
+      setToast({ message: "Çözüm silindi", type: "success" })
+    }
   }
 
   return (
@@ -173,6 +184,8 @@ export default function SolutionList({ initialSolutions }: { initialSolutions: S
           ))}
         </Reorder.Group>
       )}
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   )
 }
