@@ -206,7 +206,7 @@ export interface LeadDetail extends LeadListItem {
   tasks: LeadTaskView[]
   contactForms: Array<{ id: string; message: string; createdAt: Date }>
   consultingForms: Array<{ id: string; message: string | null; createdAt: Date }>
-  partnerixForms: Array<{ id: string; sector: string | null; budget: string | null; createdAt: Date }>
+  partnerixForms: Array<{ id: string; sector: string | null; budget: string | null; support: string | null; platform: string | null; timeline: string | null; createdAt: Date }>
 }
 
 export interface LeadFilters {

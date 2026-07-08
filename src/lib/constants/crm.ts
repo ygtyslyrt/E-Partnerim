@@ -42,3 +42,56 @@ export const FORM_STATUS_META: Record<FormStatusType, { label: string; color: st
 export function leadStatusMeta(status: string) {
   return LEAD_STATUSES.find((s) => s.value === status) ?? LEAD_STATUSES[0]
 }
+
+// ── Partnerix Lead Score ─────────────────────────────────────────
+// Partnerix wizard'ının 4 sorusundan 3'ü (Hedef, Mevcut Durum, Zamanlama) skora girer;
+// Sektör yalnızca partner eşleştirme/yönlendirme için kullanılır, skora dahil değildir.
+// PartnerixForm tablosunda: Hedef -> support alanı, Mevcut Durum -> platform alanı,
+// Zamanlama -> timeline alanı olarak saklanır (bkz. PartnerixScene.tsx handleSubmitContact).
+
+const TIMELINE_SCORES: Record<string, number> = {
+  "Hemen": 40,
+  "1 ay içinde": 25,
+  "2-3 ay içinde": 10,
+  "Şimdilik araştırıyorum": 0,
+}
+
+const CURRENT_STATUS_SCORES: Record<string, number> = {
+  "Memnun değilim, değiştirmek istiyorum": 20,
+  "Kendim yönetiyorum": 10,
+  "Bir ajansla çalışıyorum": 10,
+  "Henüz başlamadım": 5,
+}
+
+const GOAL_SCORES: Record<string, number> = {
+  "Dijital reklam vermek": 15,
+  "Daha fazla satış": 15,
+  "Daha fazla müşteri": 10,
+  "Yeni bir web sitesi yaptırmak": 10,
+  "Google'da daha görünür olmak": 10,
+}
+
+export interface LeadScoreResult {
+  score: number
+  tier: "Çok Sıcak" | "Sıcak" | "Potansiyel" | "Soğuk"
+  emoji: string
+  color: string
+}
+
+export function calculatePartnerixLeadScore(input: {
+  timeline?: string | null
+  currentStatus?: string | null
+  goal?: string | null
+}): LeadScoreResult | null {
+  if (!input.timeline && !input.currentStatus && !input.goal) return null
+
+  const score =
+    (TIMELINE_SCORES[input.timeline ?? ""] ?? 0) +
+    (CURRENT_STATUS_SCORES[input.currentStatus ?? ""] ?? 0) +
+    (GOAL_SCORES[input.goal ?? ""] ?? 0)
+
+  if (score >= 75) return { score, tier: "Çok Sıcak", emoji: "🔥", color: "bg-red-50 text-red-700 border-red-100" }
+  if (score >= 50) return { score, tier: "Sıcak", emoji: "🟢", color: "bg-emerald-50 text-emerald-700 border-emerald-100" }
+  if (score >= 25) return { score, tier: "Potansiyel", emoji: "🟡", color: "bg-amber-50 text-amber-700 border-amber-100" }
+  return { score, tier: "Soğuk", emoji: "⚪", color: "bg-slate-50 text-slate-500 border-slate-200" }
+}

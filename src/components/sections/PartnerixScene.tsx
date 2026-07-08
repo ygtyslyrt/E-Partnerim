@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 import PartnerixCharacterVisual from "./PartnerixCharacterVisual";
 import type { CharacterVisualStyle } from "./PartnerixCharacterVisual";
+import LeadContactForm from "./LeadContactForm";
 import {
-  ShoppingCart, Building2, Megaphone, Gift, MoreHorizontal,
-  BarChart2, Settings2, Package, TrendingUp, Rocket, Zap,
-  Target, Layers, PlusCircle, CreditCard, DollarSign,
+  ShoppingCart, Building2, Megaphone, MoreHorizontal, Store,
+  Settings2, TrendingUp, Users, Globe, Search,
+  PlusCircle, Briefcase, RefreshCw, Zap,
   Calendar, CalendarDays, Eye,
-  Check, ArrowRight, Lock, MessageCircle, CheckCircle2, User, Phone, Loader2,
+  Check, ArrowRight, Lock, MessageCircle, CheckCircle2, Home,
 } from "lucide-react";
 import { getIcon } from "@/lib/icon-map";
 import type { PartnerixCharacterFull } from "@/lib/actions/partnerix-character";
@@ -30,58 +31,41 @@ interface StepDef { question: string; options: Option[]; }
 /* ─── Adımlar ──────────────────────────────────────────────────── */
 const STEPS: StepDef[] = [
   {
-    question: "İşletmenizin faaliyet alanı nedir?",
+    question: "İşletmeniz hangi alanda faaliyet gösteriyor?",
     options: [
-      { id: "eticaret",  label: "E-Ticaret",  icon: ShoppingCart,   color: "bg-[#EEF2FF] text-[#4F46E5]" },
-      { id: "hizmet",    label: "Hizmet",      icon: Megaphone,      color: "bg-[#ECFDF5] text-[#059669]" },
-      { id: "uretim",    label: "Üretim",      icon: Building2,      color: "bg-[#FFF7ED] text-[#F97316]" },
-      { id: "perakende", label: "Perakende",   icon: Gift,           color: "bg-[#EFF6FF] text-[#3B82F6]" },
-      { id: "diger",     label: "Diğer",       icon: MoreHorizontal, color: "bg-[#F8FAFC] text-[#94A3B8]" },
+      { id: "eticaret", label: "E-Ticaret",      icon: ShoppingCart,   color: "bg-[#EEF2FF] text-[#4F46E5]" },
+      { id: "hizmet",   label: "Hizmet",          icon: Megaphone,      color: "bg-[#ECFDF5] text-[#059669]" },
+      { id: "uretim",   label: "Üretim",          icon: Building2,      color: "bg-[#FFF7ED] text-[#F97316]" },
+      { id: "yerel",    label: "Yerel İşletme",   icon: Store,          color: "bg-[#EFF6FF] text-[#3B82F6]" },
+      { id: "diger",    label: "Diğer",           icon: MoreHorizontal, color: "bg-[#F8FAFC] text-[#94A3B8]" },
     ],
   },
   {
-    question: "Aylık ortalama sipariş hacminiz?",
+    question: "Şu anda ulaşmak istediğiniz en önemli hedef nedir?",
     options: [
-      { id: "s0", label: "0 – 100",     icon: Package,    color: "bg-[#F0FDF4] text-[#22C55E]" },
-      { id: "s1", label: "100 – 500",   icon: TrendingUp, color: "bg-[#EFF6FF] text-[#3B82F6]" },
-      { id: "s2", label: "500 – 1.000", icon: BarChart2,  color: "bg-[#FFF7ED] text-[#F97316]" },
-      { id: "s3", label: "1.000+",      icon: Rocket,     color: "bg-[#EEF2FF] text-[#4F46E5]" },
+      { id: "satis",    label: "Daha fazla satış",                  icon: TrendingUp, color: "bg-[#ECFDF5] text-[#059669]" },
+      { id: "musteri",  label: "Daha fazla müşteri",                icon: Users,      color: "bg-[#EFF6FF] text-[#3B82F6]" },
+      { id: "website",  label: "Yeni bir web sitesi yaptırmak",     icon: Globe,      color: "bg-[#EEF2FF] text-[#4F46E5]" },
+      { id: "reklam",   label: "Dijital reklam vermek",             icon: Megaphone,  color: "bg-[#FFF7ED] text-[#F97316]" },
+      { id: "google",   label: "Google'da daha görünür olmak",      icon: Search,     color: "bg-[#F0F9FF] text-[#0EA5E9]" },
     ],
   },
   {
-    question: "En çok hangi konuda desteğe ihtiyacınız var?",
+    question: "Şu anda dijital tarafta hangi noktadasınız?",
     options: [
-      { id: "d0", label: "E-ticaret Altyapısı", icon: ShoppingCart, color: "bg-[#EEF2FF] text-[#4F46E5]" },
-      { id: "d1", label: "Dijital Pazarlama",   icon: Target,       color: "bg-[#FFF7ED] text-[#F97316]" },
-      { id: "d2", label: "Entegrasyon",         icon: Layers,       color: "bg-[#F0F9FF] text-[#0EA5E9]" },
-      { id: "d3", label: "Büyüme Stratejisi",   icon: BarChart2,    color: "bg-[#ECFDF5] text-[#059669]" },
+      { id: "baslamadi", label: "Henüz başlamadım",                       icon: PlusCircle, color: "bg-[#F0FDF4] text-[#22C55E]" },
+      { id: "kendim",     label: "Kendim yönetiyorum",                     icon: Settings2,  color: "bg-[#EEF2FF] text-[#4F46E5]" },
+      { id: "ajans",      label: "Bir ajansla çalışıyorum",                icon: Briefcase,  color: "bg-[#EFF6FF] text-[#3B82F6]" },
+      { id: "memnundegil", label: "Memnun değilim, değiştirmek istiyorum", icon: RefreshCw,  color: "bg-[#FFF7ED] text-[#F97316]" },
     ],
   },
   {
-    question: "Mevcut e-ticaret altyapınız nedir?",
+    question: "Ne zaman başlamak istiyorsunuz?",
     options: [
-      { id: "a0", label: "Henüz Yok",      icon: PlusCircle,   color: "bg-[#F0FDF4] text-[#22C55E]" },
-      { id: "a1", label: "Hazır Platform",  icon: ShoppingCart, color: "bg-[#EFF6FF] text-[#3B82F6]" },
-      { id: "a2", label: "Özel Yazılım",    icon: Settings2,    color: "bg-[#EEF2FF] text-[#4F46E5]" },
-      { id: "a3", label: "Geçiş Yapacağım", icon: TrendingUp,   color: "bg-[#FFF7ED] text-[#F97316]" },
-    ],
-  },
-  {
-    question: "Aylık dijital pazarlama bütçeniz?",
-    options: [
-      { id: "b0", label: "0 – 5K ₺",    icon: CreditCard, color: "bg-[#F0FDF4] text-[#22C55E]" },
-      { id: "b1", label: "5K – 20K ₺",  icon: DollarSign, color: "bg-[#EFF6FF] text-[#3B82F6]" },
-      { id: "b2", label: "20K – 50K ₺", icon: Zap,        color: "bg-[#EEF2FF] text-[#4F46E5]" },
-      { id: "b3", label: "50K+ ₺",      icon: Target,     color: "bg-[#FFF7ED] text-[#F97316]" },
-    ],
-  },
-  {
-    question: "Ne zaman başlamayı planlıyorsunuz?",
-    options: [
-      { id: "t0", label: "Hemen Şimdi",     icon: Zap,          color: "bg-[#ECFDF5] text-[#059669]" },
-      { id: "t1", label: "1 Ay İçinde",      icon: Calendar,     color: "bg-[#EFF6FF] text-[#3B82F6]" },
-      { id: "t2", label: "3 Ay İçinde",      icon: CalendarDays, color: "bg-[#EEF2FF] text-[#4F46E5]" },
-      { id: "t3", label: "Henüz Bilmiyorum", icon: Eye,          color: "bg-[#F8FAFC] text-[#94A3B8]" },
+      { id: "hemen",   label: "Hemen",                    icon: Zap,          color: "bg-[#ECFDF5] text-[#059669]" },
+      { id: "1ay",     label: "1 ay içinde",               icon: Calendar,     color: "bg-[#EFF6FF] text-[#3B82F6]" },
+      { id: "2-3ay",   label: "2-3 ay içinde",             icon: CalendarDays, color: "bg-[#EEF2FF] text-[#4F46E5]" },
+      { id: "arastir", label: "Şimdilik araştırıyorum",    icon: Eye,          color: "bg-[#F8FAFC] text-[#94A3B8]" },
     ],
   },
 ];
@@ -148,13 +132,13 @@ type ScenePhase = "questions" | "contact" | "done";
 
 function WizardCard({
   step, pending, onSelect, onNext, phase, accentColor, gradientEnd, isDark, ctas,
-  name, phone, onNameChange, onPhoneChange, onSubmitContact, submitting, contactError,
+  name, phone, email, onNameChange, onPhoneChange, onEmailChange, onSubmitContact, submitting, contactError,
 }: {
   step: number; pending: string | null;
   onSelect: (id: string) => void; onNext: () => void; phase: ScenePhase;
   accentColor: string; gradientEnd: string; isDark: boolean; ctas: CtaDef[];
-  name: string; phone: string;
-  onNameChange: (v: string) => void; onPhoneChange: (v: string) => void;
+  name: string; phone: string; email: string;
+  onNameChange: (v: string) => void; onPhoneChange: (v: string) => void; onEmailChange: (v: string) => void;
   onSubmitContact: () => void; submitting: boolean; contactError: string | null;
 }) {
   const def   = STEPS[step];
@@ -180,13 +164,13 @@ function WizardCard({
 
         {/* Başlık + ilerleme */}
         <div className="flex-shrink-0 border-b px-5 py-3.5" style={{ borderColor: cardBorder }}>
-          <div className="flex items-center justify-between">
-            <span className="text-[13.5px] font-bold" style={{ color: cardText }}>İhtiyaç Analiziniz</span>
+          <div className="flex items-center justify-between gap-2">
+            <span className="min-w-0 truncate text-[13.5px] font-bold" style={{ color: cardText }}>🤖 Partnerix ile Ücretsiz Dijital Analiz</span>
             <span
-              className="text-[12px] font-semibold tabular-nums"
+              className="shrink-0 text-[12px] font-semibold tabular-nums"
               style={{ color: phase === "questions" ? accentColor : "#059669" }}
             >
-              {phase === "questions" ? `${step + 1} / ${total}` : phase === "contact" ? "Son Adım" : "Tamamlandı ✓"}
+              {phase === "questions" ? `${step + 1} / ${total}` : phase === "contact" ? `Adım ${total + 1} / ${total + 1}` : "Tamamlandı ✓"}
             </span>
           </div>
           <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#F1F5F9]">
@@ -204,22 +188,48 @@ function WizardCard({
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center"
+            className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-5 py-3.5 text-center"
           >
-            <motion.div
-              animate={{ scale: [1, 1.06, 1] }}
-              transition={{ duration: 2.4, repeat: Infinity }}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F0FDF9]"
-            >
-              <CheckCircle2 className="h-7 w-7 text-[#00D084]" />
-            </motion.div>
-            <div className="space-y-1.5">
-              <p className="text-[14px] font-bold" style={{ color: cardText }}>Analiz Tamamlandı!</p>
-              <p className="text-[11.5px] leading-relaxed text-[#64748B]">
-                Size özel çözümler hazırlanıyor…
+            <div className="flex flex-col items-center gap-2">
+              <motion.div
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{ duration: 2.4, repeat: Infinity }}
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-[#F0FDF9]"
+              >
+                <CheckCircle2 className="h-5 w-5 text-[#00D084]" />
+              </motion.div>
+              <div className="space-y-1">
+                <p className="text-[13px] font-bold leading-snug" style={{ color: cardText }}>🎉 Analiziniz Başarıyla Oluşturuldu!</p>
+                <p className="text-[10px] leading-relaxed text-[#64748B]">
+                  Partnerix işletmenizi başarıyla analiz etti. Size en uygun dijital çözüm ortaklarını belirlemek ve size özel dijital büyüme yol haritanızı hazırlamak için ekibimiz analizinizi incelemeye başladı.
+                </p>
+              </div>
+            </div>
+
+            <div className="w-full rounded-xl border px-3 py-2.5 text-left" style={{ borderColor: cardBorder, backgroundColor: isDark ? "#0B1220" : "#F8FAFC" }}>
+              <p className="mb-1.5 text-[10.5px] font-bold" style={{ color: cardText }}>Sonraki Süreç</p>
+              <ul className="space-y-1">
+                {[
+                  "Analiziniz uzman ekibimize iletildi.",
+                  "İhtiyaçlarınıza en uygun çözüm önerileri hazırlanacak.",
+                  "Dijital danışmanımız 24 saat içinde sizinle iletişime geçecek.",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-1.5 text-[10px] leading-snug text-[#64748B]">
+                    <Check className="mt-[3px] h-2.5 w-2.5 flex-shrink-0 text-[#00D084]" strokeWidth={3} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex items-start justify-center gap-1 px-1">
+              <Lock className="mt-[2px] h-2.5 w-2.5 flex-shrink-0 text-[#CBD5E1]" />
+              <p className="text-[8.5px] leading-snug text-[#94A3B8]">
+                🔒 Bilgileriniz KVKK kapsamında güvenle saklanmaktadır. Hiçbir ücret veya yükümlülük altına girmezsiniz.
               </p>
             </div>
-            <div className="flex w-full flex-col gap-2">
+
+            <div className="flex w-full flex-col gap-1.5">
               {effectiveCtas.map((cta, i) => {
                 const Icon = getIcon(cta.icon, MessageCircle)
                 return (
@@ -228,50 +238,38 @@ function WizardCard({
                     href={cta.href ?? "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[12.5px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
                     style={{ background: cta.color }}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5" />
                     {cta.label}
                   </a>
                 )
               })}
+              <a
+                href="/"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-[12.5px] font-semibold transition-all hover:bg-[#F8FAFC] active:scale-[0.98]"
+                style={{ borderColor: cardBorder, color: cardText }}
+              >
+                <Home className="h-3.5 w-3.5" />
+                Ana Sayfaya Dön
+              </a>
             </div>
           </motion.div>
         ) : phase === "contact" ? (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-1 flex-col px-5 pt-4"
-          >
-            <p className="text-[12.5px] font-semibold leading-snug" style={{ color: cardText }}>
-              Harika! Sonuçlarınızı gönderebilmemiz için size nasıl ulaşabiliriz?
-            </p>
-            <div className="mt-3.5 space-y-2.5">
-              <div className="relative">
-                <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-                <input
-                  value={name}
-                  onChange={(e) => onNameChange(e.target.value)}
-                  placeholder="Adınız Soyadınız"
-                  className="w-full rounded-xl border border-[#E4E9F2] py-2.5 pl-10 pr-3.5 text-[13px] outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/10 transition"
-                  style={{ backgroundColor: inputBg, color: cardText }}
-                />
-              </div>
-              <div className="relative">
-                <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
-                <input
-                  value={phone}
-                  onChange={(e) => onPhoneChange(e.target.value)}
-                  placeholder="05xx xxx xx xx"
-                  className="w-full rounded-xl border border-[#E4E9F2] py-2.5 pl-10 pr-3.5 text-[13px] outline-none focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/10 transition"
-                  style={{ backgroundColor: inputBg, color: cardText }}
-                />
-              </div>
-              {contactError && <p className="text-[11px] text-red-500">{contactError}</p>}
-            </div>
-            <div className="flex-1" />
-          </motion.div>
+          <LeadContactForm
+            cardText={cardText}
+            inputBg={inputBg}
+            name={name}
+            phone={phone}
+            email={email}
+            onNameChange={onNameChange}
+            onPhoneChange={onPhoneChange}
+            onEmailChange={onEmailChange}
+            contactError={contactError}
+            onSubmitContact={onSubmitContact}
+            submitting={submitting}
+          />
         ) : (
           <>
             {/* Soru */}
@@ -369,23 +367,6 @@ function WizardCard({
             </div>
           </div>
         )}
-        {phase === "contact" && (
-          <div className="flex-shrink-0 border-t border-[#F1F5F9] px-5 pb-4 pt-3">
-            <button
-              onClick={onSubmitContact}
-              disabled={submitting || !name.trim() || !phone.trim()}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold text-white transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed"
-              style={{ background: name.trim() && phone.trim() ? DEVAM_BG : "#CBD5E1" }}
-            >
-              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-              {submitting ? "Gönderiliyor..." : "Sonuçları Gör"}
-            </button>
-            <div className="mt-2 flex items-center justify-center gap-1">
-              <Lock className="h-2.5 w-2.5 text-[#CBD5E1]" />
-              <span className="text-[9px] text-[#CBD5E1]">Bilgileriniz güvenli ve gizlidir.</span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -426,6 +407,7 @@ export default function PartnerixScene({ welcomeMessage, character, isDesktop = 
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [name,  setName]  = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [contactError, setContactError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const [isTalking, setIsTalking] = useState(true);
@@ -455,9 +437,11 @@ export default function PartnerixScene({ welcomeMessage, character, isDesktop = 
     setContactError(null);
     startTransition(async () => {
       const result = await completePartnerixSession({
-        name, phone,
-        sector: answers[0], orderVolume: answers[1], support: answers[2],
-        platform: answers[3], budget: answers[4], timeline: answers[5],
+        name, phone, email: email.trim() || undefined,
+        // answers[0]=Sektör, answers[1]=Hedef, answers[2]=Mevcut Durum, answers[3]=Zamanlama —
+        // mevcut PartnerixCompletionInput alan adları (support/platform) korunuyor, sadece
+        // içerikleri yeni 4 soruluk akışa göre eşleniyor (bkz. LeadSourcePanel etiketleri).
+        sector: answers[0], support: answers[1], platform: answers[2], timeline: answers[3],
         answers,
       });
       if (result.success) setPhase("done");
@@ -530,8 +514,10 @@ export default function PartnerixScene({ welcomeMessage, character, isDesktop = 
           ctas={ctas}
           name={name}
           phone={phone}
+          email={email}
           onNameChange={setName}
           onPhoneChange={setPhone}
+          onEmailChange={setEmail}
           onSubmitContact={handleSubmitContact}
           submitting={isSubmitting}
           contactError={contactError}

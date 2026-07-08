@@ -113,7 +113,7 @@ export async function getLead(id: string): Promise<LeadDetail | null> {
       },
       contactForms: { select: { id: true, message: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       consultingForms: { select: { id: true, message: true, createdAt: true }, orderBy: { createdAt: "desc" } },
-      partnerixForms: { select: { id: true, sector: true, budget: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+      partnerixForms: { select: { id: true, sector: true, budget: true, support: true, platform: true, timeline: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       _count: { select: { tasks: { where: { completed: false } } } },
     },
   })

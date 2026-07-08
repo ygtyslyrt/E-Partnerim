@@ -149,7 +149,11 @@
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime\")",
       "Bash(grep *)",
       "Bash(rm -rf \"D:\\\\Projeler\\\\E-Partnerim\\\\src\\\\app\\\\api\\\\qa-toast-tmp\")",
-      "Bash(rm -f /tmp/cookiejar_toast.txt)"
+      "Bash(rm -f /tmp/cookiejar_toast.txt)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(npx --no-install playwright install --dry-run chromium)",
+      "Bash(node -e \"console.log\\(require\\('playwright'\\)\\)\")",
+      "Bash(node test-partnerix.js)"
     ]
   }
 }
